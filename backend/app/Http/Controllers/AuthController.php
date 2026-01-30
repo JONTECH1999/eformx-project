@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\SuperAdmin;
+use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
@@ -12,20 +12,24 @@ class AuthController extends Controller
     {
         $request->validate([
             'email' => 'required|email',
-            'password' => 'required',
+            'password' => 'required'
         ]);
 
-        $admin = SuperAdmin::where('email', $request->email)->first();
+        $user = User::where('email', $request->email)->first();
 
-        if (!$admin || !Hash::check($request->password, $admin->password)) {
+        if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
+        if (!in_array($user->role, ['admin', 'super_admin'])) {
+            return response()->json(['message' => 'You are not authorized to login.'], 403);
+        }
+
         return response()->json([
-            'id' => $admin->id,
-            'name' => $admin->name,
-            'email' => $admin->email,
-            'role' => 'Super Admin',
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $user->role,
         ]);
     }
 }
