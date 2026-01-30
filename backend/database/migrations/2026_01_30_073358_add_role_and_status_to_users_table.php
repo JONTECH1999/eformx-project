@@ -10,14 +10,10 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('super_admins', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->string('password');
-            $table->timestamps();
+        Schema::table('users', function (Blueprint $table) {
+            $table->string('role')->nullable()->after('email');
+            $table->string('status')->default('Active')->after('role');
         });
-
     }
 
     /**
@@ -25,6 +21,8 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('super_admins');
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn(['role', 'status']);
+        });
     }
 };

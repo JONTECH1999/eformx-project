@@ -2,14 +2,14 @@ import React, { useState } from "react";
 import "../styles/Login.css";
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import logo from "../assets/eFormX.png";
-import axios from "axios";
+import authService from "../services/authService";
 
 function Login({ goRegister, goForgot, setUser }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false); // disable button while logging in
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -21,16 +21,18 @@ function Login({ goRegister, goForgot, setUser }) {
     setError("");
 
     try {
-      const res = await axios.post("http://127.0.0.1:8000/api/login", {
-        email,
-        password,
-      });
-
-      setUser(res.data); // send logged-in user info to App.jsx
+      const userData = await authService.login(email, password);
+      setUser(userData); // Send logged-in user info to App.jsx
     } catch (err) {
-      setError(err.response?.data?.message || "Login failed");
+      setError(err.response?.data?.message || "Login failed. Please check your credentials.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleLogin();
     }
   };
 
@@ -50,6 +52,7 @@ function Login({ goRegister, goForgot, setUser }) {
             placeholder="name@gmail.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            onKeyPress={handleKeyPress}
           />
         </div>
 
@@ -60,6 +63,7 @@ function Login({ goRegister, goForgot, setUser }) {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            onKeyPress={handleKeyPress}
           />
           <span
             className="password-toggle"
