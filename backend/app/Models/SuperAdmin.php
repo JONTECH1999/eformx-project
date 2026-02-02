@@ -9,7 +9,7 @@ class SuperAdmin extends Model
 {
     use HasApiTokens;
 
-    protected $table = 'super_admins';
+    protected $table = 'superadmins';
 
     protected $fillable = [
         'name',

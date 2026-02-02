@@ -53,7 +53,8 @@ function SuperAdminDashboard({ superAdminProfile, onLogout }) {
       setIsModalOpen(false);
     } catch (err) {
       console.error("Error creating user:", err);
-      alert("Failed to create user. " + (err.response?.data?.message || "Please try again."));
+      // Propagate error so the modal can display proper message
+      throw err;
     }
   };
 

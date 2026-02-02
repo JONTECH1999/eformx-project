@@ -46,13 +46,20 @@ function CreateAccountModal({ isOpen, onClose, onCreate, onUpdate, account }) {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // optional choice for the password
+    // Validate required fields
     if (!form.name || !form.email || (!account && !form.password)) {
       setIsError(true);
       setMessage("Please fill in all required fields.");
+      return;
+    }
+
+    // Enforce minimum password length on create (and on edit if provided)
+    if ((!account && form.password.length < 6) || (account && form.password && form.password.length < 6)) {
+      setIsError(true);
+      setMessage("The password must be at least 6 characters.");
       return;
     }
 
@@ -64,21 +71,30 @@ function CreateAccountModal({ isOpen, onClose, onCreate, onUpdate, account }) {
       status: form.status,
     };
 
-    if (account) {
-      // Edit mode
-      onUpdate(accountData);
-      setMessage("Account successfully updated!");
-    } else {
-      // Create mode
-      onCreate(accountData);
-      setMessage("Account successfully created!");
+    try {
+      if (account) {
+        // Edit mode
+        await onUpdate(accountData);
+        setIsError(false);
+        setMessage("Account successfully updated!");
+      } else {
+        // Create mode
+        await onCreate(accountData);
+        setIsError(false);
+        setMessage("Account successfully created!");
+      }
+
+      setTimeout(() => {
+        onClose();
+      }, 1500);
+    } catch (err) {
+      // Show backend validation or generic error message
+      const apiData = err?.response?.data;
+      const firstError = apiData?.errors ? Object.values(apiData.errors)[0]?.[0] : null;
+      const serverMsg = firstError || apiData?.message || err?.message || "Failed to submit. Please try again.";
+      setIsError(true);
+      setMessage(serverMsg);
     }
-
-    setIsError(false);
-
-    setTimeout(() => {
-      onClose();
-    }, 1500);
   };
 
   return (

@@ -19,36 +19,47 @@ class AuthController extends Controller
         // Try SuperAdmin first
         $admin = SuperAdmin::where('email', $request->email)->first();
 
-        if ($admin && Hash::check($request->password, $admin->password)) {
-            // Create Sanctum token for SuperAdmin
-            $token = $admin->createToken('auth-token')->plainTextToken;
+        if ($admin) {
+            if (Hash::check($request->password, $admin->password)) {
+                // Create Sanctum token for SuperAdmin
+                $token = $admin->createToken('auth-token')->plainTextToken;
 
-            return response()->json([
-                'id' => $admin->id,
-                'name' => $admin->name,
-                'email' => $admin->email,
-                'role' => 'Super Admin',
-                'token' => $token,
-            ]);
+                return response()->json([
+                    'id' => $admin->id,
+                    'name' => $admin->name,
+                    'email' => $admin->email,
+                    'role' => 'Super Admin',
+                    'token' => $token,
+                ]);
+            }
+
+            // Email exists, password incorrect
+            return response()->json(['message' => 'Incorrect password'], 401);
         }
 
         // Try regular User
         $user = User::where('email', $request->email)->first();
 
-        if ($user && Hash::check($request->password, $user->password)) {
-            // Create Sanctum token
-            $token = $user->createToken('auth-token')->plainTextToken;
+        if ($user) {
+            if (Hash::check($request->password, $user->password)) {
+                // Create Sanctum token
+                $token = $user->createToken('auth-token')->plainTextToken;
 
-            return response()->json([
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => 'User',
-                'token' => $token,
-            ]);
+                return response()->json([
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => 'User',
+                    'token' => $token,
+                ]);
+            }
+
+            // Email exists, password incorrect
+            return response()->json(['message' => 'Incorrect password'], 401);
         }
 
-        return response()->json(['message' => 'Invalid credentials'], 401);
+        // No matching account found
+        return response()->json(['message' => 'Email not registered'], 404);
     }
 
     public function logout(Request $request)
