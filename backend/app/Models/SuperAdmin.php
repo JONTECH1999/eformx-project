@@ -9,7 +9,8 @@ class SuperAdmin extends Model
 {
     use HasApiTokens;
 
-    protected $table = 'superadmins';
+    // Match the migration table name
+    protected $table = 'super_admins';
 
     protected $fillable = [
         'name',
