@@ -21,7 +21,7 @@ function CreateAccountModal({ isOpen, onClose, onCreate, onUpdate, account }) {
         setForm({
           name: account.name || "",
           email: account.email || "",
-          password: "", 
+          password: "",
           role: account.role || "Admin",
           status: account.status || "Active",
         });
@@ -46,7 +46,7 @@ function CreateAccountModal({ isOpen, onClose, onCreate, onUpdate, account }) {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
 
     // Validate required fields
@@ -68,33 +68,22 @@ function CreateAccountModal({ isOpen, onClose, onCreate, onUpdate, account }) {
       email: form.email,
       password: form.password,
       role: form.role,
-      status: form.status,
+      status: account ? form.status : "Active", // force Active on create
     };
 
-    try {
-      if (account) {
-        // Edit mode
-        await onUpdate(accountData);
-        setIsError(false);
-        setMessage("Account successfully updated!");
-      } else {
-        // Create mode
-        await onCreate(accountData);
-        setIsError(false);
-        setMessage("Account successfully created!");
-      }
-
-      setTimeout(() => {
-        onClose();
-      }, 1500);
-    } catch (err) {
-      // Show backend validation or generic error message
-      const apiData = err?.response?.data;
-      const firstError = apiData?.errors ? Object.values(apiData.errors)[0]?.[0] : null;
-      const serverMsg = firstError || apiData?.message || err?.message || "Failed to submit. Please try again.";
-      setIsError(true);
-      setMessage(serverMsg);
+    if (account) {
+      onUpdate(accountData);
+      setMessage("Account successfully updated!");
+    } else {
+      onCreate(accountData);
+      setMessage("Account successfully created!");
     }
+
+    setIsError(false);
+
+    setTimeout(() => {
+      onClose();
+    }, 1500);
   };
 
   return (
@@ -126,7 +115,7 @@ function CreateAccountModal({ isOpen, onClose, onCreate, onUpdate, account }) {
             placeholder="Email"
             value={form.email}
             onChange={handleChange}
-            disabled={!!account} 
+            disabled={!!account}
           />
 
           <input
@@ -142,10 +131,37 @@ function CreateAccountModal({ isOpen, onClose, onCreate, onUpdate, account }) {
             <option>Super Admin</option>
           </select>
 
-          <select name="status" value={form.status} onChange={handleChange}>
-            <option>Active</option>
-            <option>Inactive</option>
-          </select>
+          {/* ✅ SMART STATUS DROPDOWN ONLY WHEN EDITING */}
+          {account && (
+            <select
+              name="status"
+              value={form.status}
+              onChange={(e) => {
+                const value = e.target.value;
+
+                // Convert action into real status
+                if (value === "Deactivate") {
+                  setForm({ ...form, status: "Inactive" });
+                } else if (value === "Reactivate") {
+                  setForm({ ...form, status: "Active" });
+                } else {
+                  setForm({ ...form, status: value });
+                }
+              }}
+            >
+              {/* Show current status */}
+              <option value={form.status}>{form.status}</option>
+
+              {/* Show action based on current status */}
+              {form.status === "Active" && (
+                <option value="Deactivate">Deactivate</option>
+              )}
+
+              {form.status === "Inactive" && (
+                <option value="Reactivate">Reactivate</option>
+              )}
+            </select>
+          )}
 
           <button type="submit" className="create-btn">
             {account ? "Update Account" : "Create Account"}

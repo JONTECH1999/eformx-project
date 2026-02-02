@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import "../styles/SuperAdminDashboard.css";
-import { FaBell, FaUserCircle, FaPlus, FaEdit, FaTrash } from "react-icons/fa";
+import { FaBell, FaPlus, FaEdit, FaTrash, FaUserEdit, FaCamera } from "react-icons/fa";
 import CreateAccountModal from "./CreateAccountModal";
 import logo from "../assets/eFormX.png";
 import authService from "../services/authService";
 import userService from "../services/userService";
 
-
-function SuperAdminDashboard({ superAdminProfile, onLogout }) {
+function SuperAdminDashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,93 +17,70 @@ function SuperAdminDashboard({ superAdminProfile, onLogout }) {
 
   const [accountToEdit, setAccountToEdit] = useState(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
 
-  // Default profile if not provided
-  const profile = superAdminProfile || {
-    name: "Super Admin",
-    email: "superadmin@example.com",
-    role: "Super Admin",
+  // ✅ Persistent Super Admin Profile
+  const [superAdminProfile, setSuperAdminProfile] = useState(() => {
+    const saved = localStorage.getItem("superAdminProfile");
+    return saved
+      ? JSON.parse(saved)
+      : {
+          name: "Admin",
+          email: "admin@example.com",
+          photo: "https://i.pravatar.cc/150?img=5",
+        };
+  });
+
+  const handleSaveProfile = () => {
+    localStorage.setItem(
+      "superAdminProfile",
+      JSON.stringify(superAdminProfile)
+    );
+    alert("Profile updated!");
+    setIsEditProfileOpen(false);
+    setIsProfileOpen(false);
   };
 
-  // Fetch users on component mount
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
-    try {
-      setLoading(true);
-      setError("");
-      const data = await userService.getUsers();
-      setAccounts(data);
-    } catch (err) {
-      console.error("Error fetching users:", err);
-      setError("Failed to load users. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+  // Account Logic
+  const handleCreateAccount = (account) => {
+    setAccounts([...accounts, account]);
   };
 
-  // CREATE NEW ACCOUNT
-  const handleCreateAccount = async (account) => {
-    try {
-      await userService.createUser(account);
-      await fetchUsers(); // Refresh list
-      setIsModalOpen(false);
-    } catch (err) {
-      console.error("Error creating user:", err);
-      // Propagate error so the modal can display proper message
-      throw err;
-    }
-  };
-
-  // OPEN EDIT MODAL
-  const openEditModal = (account) => {
-    setAccountToEdit(account);
+  const openEditModal = (index) => {
+    setAccountToEdit({ ...accounts[index], index });
     setIsModalOpen(true);
   };
 
-  // UPDATE EXISTING ACCOUNT
-  const handleUpdateAccount = async (updatedAccount) => {
-    try {
-      await userService.updateUser(accountToEdit.id, updatedAccount);
-      await fetchUsers(); // Refresh list
-      setAccountToEdit(null);
-      setIsModalOpen(false);
-    } catch (err) {
-      console.error("Error updating user:", err);
-      alert("Failed to update user. " + (err.response?.data?.message || "Please try again."));
-    }
+  const handleUpdateAccount = (updatedAccount) => {
+    const updatedAccounts = [...accounts];
+    updatedAccounts[accountToEdit.index] = updatedAccount;
+    setAccounts(updatedAccounts);
+    setAccountToEdit(null);
+    setIsModalOpen(false);
   };
 
-  // DELETE ACCOUNT
-  const openDeleteModal = (account) => {
-    setAccountToDelete(account);
+  const openDeleteModal = (index) => {
+    setAccountToDelete(index);
     setIsDeleteModalOpen(true);
   };
 
-  const confirmDelete = async () => {
-    try {
-      await userService.deleteUser(accountToDelete.id);
-      await fetchUsers(); // Refresh list
-      setIsDeleteModalOpen(false);
-      setAccountToDelete(null);
-    } catch (err) {
-      console.error("Error deleting user:", err);
-      alert("Failed to delete user. Please try again.");
-    }
+  const confirmDelete = () => {
+    const updated = accounts.filter((_, i) => i !== accountToDelete);
+    setAccounts(updated);
+    setIsDeleteModalOpen(false);
+    setAccountToDelete(null);
   };
 
-  // LOGOUT FUNCTION
-  const handleLogout = async () => {
-    await authService.logout();
+const handleLogout = async () => {
+  try {
+    await authService.logout();   // your firebase/auth logout
     setIsProfileOpen(false);
-    if (onLogout) {
-      onLogout();
-    } else {
-      window.location.reload();
-    }
-  };
+    window.location.href = "/";   // go back to login page
+  } catch (error) {
+    console.error("Logout error:", error);
+  }
+};
+
 
   return (
     <div className="superadmin">
@@ -121,11 +97,20 @@ function SuperAdminDashboard({ superAdminProfile, onLogout }) {
             onClick={() => setIsProfileOpen(true)}
             style={{ cursor: "pointer" }}
           >
-            <span>{profile.name}</span>
-            <FaUserCircle className="profile-icon" />
+            {/* <span className="profile-name-with-bell">
+              {superAdminProfile.name} 
+              <FaBell className="header-bell-icon" title="Notifications" />
+            </span> */}
+            <img
+              src={superAdminProfile.photo}
+              alt="Profile"
+              className="header-profile-pic"
+            />
           </div>
-        </div>
+          </div>
+
       </header>
+
 
       {/* TITLE */}
       <div className="page-title">
@@ -143,50 +128,55 @@ function SuperAdminDashboard({ superAdminProfile, onLogout }) {
 
       {/* TABLE */}
       <div className="table-card">
-        {loading && <p style={{ textAlign: "center", padding: "20px" }}>Loading users...</p>}
-        {error && <p style={{ textAlign: "center", padding: "20px", color: "red" }}>{error}</p>}
-
-        {!loading && !error && (
-          <table>
-            <thead>
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {accounts.length === 0 ? (
               <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th>Action</th>
+                <td colSpan="5" className="empty-row">
+                  No accounts created yet
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {accounts.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="empty-row">
-                    No accounts created yet
+            ) : (
+              accounts.map((acc, index) => (
+                <tr key={index}>
+                  <td>{acc.name}</td>
+                  <td>{acc.email}</td>
+                  <td>{acc.role}</td>
+                  <td
+                    className={
+                      acc.status === "Active" ? "active" : "inactive"
+                    }
+                  >
+                    {acc.status}
+                  </td>
+                  <td style={{ display: "flex", gap: "8px" }}>
+                    <button
+                      className="edit-btn"
+                      onClick={() => openEditModal(index)}
+                    >
+                      <FaEdit />
+                    </button>
+                    <button
+                      className="delete-btn"
+                      onClick={() => openDeleteModal(index)}
+                    >
+                      <FaTrash />
+                    </button>
                   </td>
                 </tr>
-              ) : (
-                accounts.map((acc) => (
-                  <tr key={acc.id}>
-                    <td>{acc.name}</td>
-                    <td>{acc.email}</td>
-                    <td>{acc.role || 'User'}</td>
-                    <td className={acc.status === "Active" ? "active" : "inactive"}>
-                      {acc.status}
-                    </td>
-                    <td style={{ display: "flex", gap: "8px" }}>
-                      <button className="edit-btn" onClick={() => openEditModal(acc)}>
-                        <FaEdit />
-                      </button>
-                      <button className="delete-btn" onClick={() => openDeleteModal(acc)}>
-                        <FaTrash />
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        )}
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
 
       {/* CREATE / EDIT ACCOUNT MODAL */}
@@ -201,47 +191,142 @@ function SuperAdminDashboard({ superAdminProfile, onLogout }) {
         account={accountToEdit}
       />
 
-      {/* DELETE CONFIRMATION MODAL */}
-      {isDeleteModalOpen && accountToDelete !== null && (
-        <div className="modal-overlay">
-          <div className="delete-modal">
-            <h3>Delete Account</h3>
-            <p>
-              Are you sure you want to delete <br />
-              <strong>{accountToDelete.email}</strong>?
-            </p>
-            <div className="delete-actions">
-              <button className="cancel-btn" onClick={() => setIsDeleteModalOpen(false)}>
-                Cancel
-              </button>
-              <button className="confirm-delete-btn" onClick={confirmDelete}>
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* SUPER ADMIN PROFILE MODAL */}
-
+      {/* PROFILE VIEW MODAL */}
       {isProfileOpen && (
         <div className="modal-overlay">
           <div className="profile-modal-card">
-            <span className="close-icon" onClick={() => setIsProfileOpen(false)}>✖</span>
+            <span
+              className="close-icon"
+              onClick={() => setIsProfileOpen(false)}
+            >
+              ✖
+            </span>
 
             <div className="profile-picture">
-              <img
-                src="https://i.pravatar.cc/150?img=5" // temporary avatar
-                alt="Super Admin"
-              />
+              <img src={superAdminProfile.photo} alt="Profile" />
             </div>
 
-            <h3 className="profile-name">{profile.name}</h3>
+            <h3 className="profile-name">{superAdminProfile.name}</h3>
 
-            <button className="logout-btn" onClick={handleLogout}>Log out</button>
+            <div className="profile-actions">
+              <button
+                className="edit-profile-btn"
+                onClick={() => setIsEditProfileOpen(true)}
+              >
+                <FaUserEdit className="btn-icon" /> 
+                  Edit Profile
+              </button>
+
+              <button className="logout-btn" onClick={handleLogout}>
+                Log out
+              </button>
+            </div>
+
           </div>
         </div>
       )}
+
+      {/* EDIT PROFILE MODAL */}
+      {isEditProfileOpen && (
+        <div className="modal-overlay">
+          <div className="profile-modal-card">
+            <span
+              className="close-icon"
+              onClick={() => setIsEditProfileOpen(false)}
+            >
+              ✖
+            </span>
+
+            <h3 className="profile-name">Edit Profile</h3>
+
+            <div className="profile-picture">
+              <img src={superAdminProfile.photo} alt="Profile" />
+
+              {/* Hidden file input */}
+              <input
+                type="file"
+                accept="image/*"
+                id="profileFileInput"
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  const reader = new FileReader();
+                  reader.onloadend = () => {
+                    setSuperAdminProfile({
+                      ...superAdminProfile,
+                      photo: reader.result,
+                    });
+                  };
+                  if (file) reader.readAsDataURL(file);
+                }}
+              />
+
+              {/* Overlay + icon */}
+              <label htmlFor="profileFileInput" className="profile-upload-icon">
+                <FaCamera />
+              </label>
+
+            </div>
+
+
+            <input
+              type="text"
+              value={superAdminProfile.name}
+              onChange={(e) =>
+                setSuperAdminProfile({
+                  ...superAdminProfile,
+                  name: e.target.value,
+                })
+              }
+              placeholder="Full Name"
+              className="profile-input"
+            />
+
+            <input
+              type="email"
+              value={superAdminProfile.email}
+              onChange={(e) =>
+                setSuperAdminProfile({
+                  ...superAdminProfile,
+                  email: e.target.value,
+                })
+              }
+              placeholder="Email"
+              className="profile-input"
+            />
+
+            <button className="save-btn" onClick={handleSaveProfile}>
+              Save Changes
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE CONFIRMATION MODAL */}
+        {isDeleteModalOpen && (
+          <div className="modal-overlay">
+            <div className="delete-modal-card">
+              <h3>Are you sure you want to delete this account?</h3>
+
+              <div className="delete-actions">
+                <button
+                  className="cancel-btn"
+                  onClick={() => setIsDeleteModalOpen(false)}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  className="confirm-delete-btn"
+                  onClick={confirmDelete}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
 
     </div>
   );

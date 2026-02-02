@@ -154,6 +154,9 @@ tbody tr:hover {
   .sa-logo {
     font-size: 18px;
   }
+  .header-bell-icon {
+    font-size: 16px;
+  }
 
   .profile span {
     display: none; 
@@ -254,16 +257,20 @@ tbody tr:hover {
 }
 
 /* Profile picture */
-.profile-modal-card .profile-picture {
-  margin-bottom: 15px;
-}
-
-.profile-modal-card .profile-picture img {
+ .profile-modal-card .profile-picture {
+  position: relative; 
   width: 160px;
   height: 160px;
+  margin: 0 auto 15px auto;
+}
+
+ .profile-modal-card .profile-picture img {
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
   object-fit: cover;
   border: 4px solid #ddd;
+  display: block;
 }
 
 
@@ -318,8 +325,153 @@ tbody tr:hover {
     height: 26px;
   }
 
-  .profile span {
-    display: none; /* hide name on very small screens */
-  }
+.profile span {
+  display: flex; /* or inline-flex */
+}
 }
 
+.header-profile-pic {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-left: 10px;
+  border: 2px solid #ddd;
+}
+
+.edit-profile-btn {
+  background: #0f4c5c;
+  color: white;
+  border: none;
+  padding: 14px 50px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 15px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.edit-profile-btn:hover {
+  background: #0b3b46;
+  transform: translateY(-1px);
+}
+
+.save-btn {
+  background: #0f4c5c;
+  color: white;
+  border: none;
+  padding: 14px 50px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1rem;
+  margin-top: 15px;
+}
+.profile-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+/* File input styling */
+.profile-picture input[type="file"] {
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* Inputs */
+.profile-input {
+  width: 80%;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+
+.profile-input:focus {
+  outline: none;
+  border-color: #4a90e2;
+  box-shadow: 0 0 5px rgba(74, 144, 226, 0.5);
+}
+
+/* + icon overlay */
+.profile-modal-card .profile-upload-icon {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background-color: #4f46e5; /* purple */
+  color: #fff;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 28px;
+  line-height: 40px;
+  text-align: center;
+  cursor: pointer;
+  border: 3px solid #fff;
+  transition: all 0.2s ease;
+}
+
+/* Hover effect */
+.profile-modal-card .profile-upload-icon:hover {
+  background-color: #3730a3;
+  transform: scale(1.1);
+}
+
+/* Align name and bell nicely */
+.profile-name-with-bell {
+  display: flex;
+  align-items: center;
+  gap: 6px; /* space between name and bell */
+  font-weight: 500;
+  color: #ffffff;
+  white-space: nowrap; 
+}
+
+/* Style the bell icon */
+.header-bell-icon {
+  font-size: 18px;
+  color: #ffffff; /* purple */
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.header-bell-icon:hover {
+  transform: scale(1.1);
+}
+.delete-modal-card {
+  background: white;
+  padding: 25px;
+  border-radius: 10px;
+  text-align: center;
+  width: 350px;
+}
+
+.delete-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.cancel-btn {
+  background: #ccc;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 5px;
+}
+
+.confirm-delete-btn {
+  background: #e74c3c;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 5px;
+}
