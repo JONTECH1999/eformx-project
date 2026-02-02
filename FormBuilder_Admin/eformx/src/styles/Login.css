@@ -1,0 +1,138 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", sans-serif;
+}
+
+ .login-container {
+  height: 100vh;
+  background: linear-gradient(to right, #0f4c5c, #2c7a7b);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+   position: relative;
+} 
+
+.login-card {
+  background: #eef5f7;
+  width: 380px;
+  padding: 40px 30px;
+  border-radius: 25px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  text-align: center;
+}
+
+
+.login-card h2 {
+  margin-bottom: 30px;
+  color: #123c4a;
+}
+
+.input-group {
+  display: flex;
+  align-items: center;
+  border-bottom: 2px solid #123c4a;
+  margin-bottom: 25px;
+  padding-bottom: 8px;
+}
+
+.input-group .icon {
+  margin-right: 10px;
+  color: #123c4a;
+}
+
+.input-group input {
+  border: none;
+  outline: none;
+  flex: 1;
+  background: transparent;
+  font-size: 14px;
+}
+
+.password-group {
+  position: relative;
+}
+
+.password-toggle {
+  cursor: pointer;
+  color: #123c4a;
+  margin-left: 8px;
+  display: flex;
+  align-items: center;
+}
+
+/* Hide browser-built-in password reveal/clear icons (prevents "extra eye" while typing) */
+.password-group input::-ms-reveal,
+.password-group input::-ms-clear {
+  display: none;
+}
+
+.password-group input::-webkit-credentials-auto-fill-button,
+.password-group input::-webkit-contacts-auto-fill-button {
+  visibility: hidden;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+}
+
+.login-btn {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 12px;
+  background: #0f4c5c;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  margin-top: 15px;
+  transition: 0.3s;
+}
+
+.login-btn:hover {
+  background: #0c3945;
+}
+
+.links {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  font-size: 13px;
+  color: rgb(13, 0, 255);
+  cursor: pointer;
+}
+.links span {
+  text-decoration: underline;
+}
+
+/* ✅ RESPONSIVE */
+@media (max-width: 480px) {
+  .login-card {
+    width: 90%;
+    padding: 30px 20px;
+  }
+}
+
+.back-icon {
+  position: absolute;
+  left: 25px;
+  top: 25px;
+  cursor: pointer;
+  color: #123c4a;
+  font-size: 18px;
+}
+
+/* Logo control */
+.logo-container {
+  position: absolute;           
+  top: 42%;                     
+  left: 50%;
+  transform: translate(-50%, -50%);  
+  margin-top: -180px;         
+  z-index: 10;                 
+}
+
+.logo {
+  width: 200px;
+}
