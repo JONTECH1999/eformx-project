@@ -6,7 +6,7 @@ import logo from "../assets/eFormX.png";
 import authService from "../services/authService";
 import userService from "../services/userService";
 
-function SuperAdminDashboard() {
+function SuperAdminDashboard({ onLogout }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,10 +44,10 @@ function SuperAdminDashboard() {
     return saved
       ? JSON.parse(saved)
       : {
-          name: "Admin",
-          email: "admin@example.com",
-          photo: "https://i.pravatar.cc/150?img=5",
-        };
+        name: "Admin",
+        email: "admin@example.com",
+        photo: "https://i.pravatar.cc/150?img=5",
+      };
   });
 
   const handleSaveProfile = () => {
@@ -126,15 +126,12 @@ function SuperAdminDashboard() {
     }
   };
 
-const handleLogout = async () => {
-  try {
-    await authService.logout();   // your firebase/auth logout
-    setIsProfileOpen(false);
-    window.location.href = "/";   // go back to login page
-  } catch (error) {
-    console.error("Logout error:", error);
-  }
-};
+  const handleLogout = () => {
+    if (onLogout) {
+      onLogout();
+      setIsProfileOpen(false);
+    }
+  };
 
 
   return (
@@ -162,7 +159,7 @@ const handleLogout = async () => {
               className="header-profile-pic"
             />
           </div>
-          </div>
+        </div>
 
       </header>
 
@@ -207,23 +204,23 @@ const handleLogout = async () => {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="5" className="empty-row">Loading...</td>
+                <td colSpan="5" className="empty-row" style={{ textAlign: "center", padding: "20px" }}>Loading accounts...</td>
               </tr>
-            ) : accounts.length === 0 ? (
+            ) : accounts && Array.isArray(accounts) && accounts.length === 0 ? (
               <tr>
-                <td colSpan="5" className="empty-row">
+                <td colSpan="5" className="empty-row" style={{ textAlign: "center", padding: "20px" }}>
                   No accounts created yet
                 </td>
               </tr>
             ) : (
-              accounts.map((acc, index) => (
-                <tr key={index}>
+              accounts && Array.isArray(accounts) && accounts.map((acc, index) => (
+                <tr key={acc.id || index}>
                   <td>{acc.name}</td>
                   <td>{acc.email}</td>
                   <td>{acc.role}</td>
                   <td
                     className={
-                      acc.status === "Active" ? "active" : "inactive"
+                      String(acc.status).toLowerCase() === "active" ? "active" : "inactive"
                     }
                   >
                     {acc.status}
@@ -283,8 +280,8 @@ const handleLogout = async () => {
                 className="edit-profile-btn"
                 onClick={() => setIsEditProfileOpen(true)}
               >
-                <FaUserEdit className="btn-icon" /> 
-                  Edit Profile
+                <FaUserEdit className="btn-icon" />
+                Edit Profile
               </button>
 
               <button className="logout-btn" onClick={handleLogout}>
@@ -379,29 +376,29 @@ const handleLogout = async () => {
       )}
 
       {/* DELETE CONFIRMATION MODAL */}
-        {isDeleteModalOpen && (
-          <div className="modal-overlay">
-            <div className="delete-modal-card">
-              <h3>Are you sure you want to delete this account?</h3>
+      {isDeleteModalOpen && (
+        <div className="modal-overlay">
+          <div className="delete-modal-card">
+            <h3>Are you sure you want to delete this account?</h3>
 
-              <div className="delete-actions">
-                <button
-                  className="cancel-btn"
-                  onClick={() => setIsDeleteModalOpen(false)}
-                >
-                  Cancel
-                </button>
+            <div className="delete-actions">
+              <button
+                className="cancel-btn"
+                onClick={() => setIsDeleteModalOpen(false)}
+              >
+                Cancel
+              </button>
 
-                <button
-                  className="confirm-delete-btn"
-                  onClick={confirmDelete}
-                >
-                  Delete
-                </button>
-              </div>
+              <button
+                className="confirm-delete-btn"
+                onClick={confirmDelete}
+              >
+                Delete
+              </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
 
     </div>

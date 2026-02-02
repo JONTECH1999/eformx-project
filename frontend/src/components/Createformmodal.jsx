@@ -18,7 +18,17 @@ function CreateFormModal({
     if (editMode && formData) {
       setFormTitle(formData.title || "");
       setFormDescription(formData.description || "");
-      setFields(formData.fields || []);
+
+      let fieldsData = formData.fields || [];
+      if (typeof fieldsData === 'string') {
+        try {
+          fieldsData = JSON.parse(fieldsData);
+        } catch (e) {
+          console.error("Failed to parse fields string:", fieldsData);
+          fieldsData = [];
+        }
+      }
+      setFields(Array.isArray(fieldsData) ? fieldsData : []);
     } else {
       setFormTitle("");
       setFormDescription("");
@@ -60,12 +70,12 @@ function CreateFormModal({
       fields.map((field) =>
         field.id === fieldId
           ? {
-              ...field,
-              options: [
-                ...field.options,
-                `Option ${field.options.length + 1}`,
-              ],
-            }
+            ...field,
+            options: [
+              ...field.options,
+              `Option ${field.options.length + 1}`,
+            ],
+          }
           : field
       )
     );
@@ -89,9 +99,9 @@ function CreateFormModal({
       fields.map((field) =>
         field.id === fieldId
           ? {
-              ...field,
-              options: field.options.filter((_, i) => i !== optionIndex),
-            }
+            ...field,
+            options: field.options.filter((_, i) => i !== optionIndex),
+          }
           : field
       )
     );

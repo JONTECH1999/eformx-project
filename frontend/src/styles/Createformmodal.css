@@ -18,6 +18,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -30,10 +31,15 @@
   width: 90%;
   max-width: 600px;
   max-height: 90vh;
-  overflow-y: auto;
+  /* Keeps it within viewport */
+  display: flex;
+  /* Changed to flex for sticky header/footer support */
+  flex-direction: column;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   position: relative;
   animation: slideUp 0.3s ease-out;
+  overflow: hidden;
+  /* Prevent double scrollbars */
 }
 
 @keyframes slideUp {
@@ -41,6 +47,7 @@
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -56,16 +63,19 @@
   height: 38px;
   border-radius: 50%;
   border: none;
-  background-color: #ff4d4f;   /* strong red */
-  color: white;                /* makes the X white */
+  background-color: #ff4d4f;
+  /* strong red */
+  color: white;
+  /* makes the X white */
   font-size: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
   transition: all 0.2s ease;
-  z-index: 10;
+  z-index: 20;
+  /* Ensure above content */
 }
 
 .modal-close:hover {
@@ -76,6 +86,10 @@
 /* ==================== MODAL CONTENT ==================== */
 .modal-content {
   padding: 32px;
+  overflow-y: auto;
+  /* Internal scrolling */
+  flex: 1;
+  /* Take remaining space */
 }
 
 /* ==================== FORM HEADER SECTION ==================== */
@@ -521,7 +535,10 @@
 @media (max-width: 768px) {
   .modal-container {
     width: 95%;
-    max-height: 95vh;
+    max-height: calc(100vh - 20px);
+    /* Better for mobile browser bars */
+    margin: 10px;
+    /* Force margin */
   }
 
   .modal-content {

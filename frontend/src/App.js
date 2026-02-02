@@ -14,14 +14,20 @@ function App() {
 
   // Check for stored authentication on mount
   useEffect(() => {
-    const storedUser = authService.getCurrentUser();
-    if (storedUser) {
-      setUser(storedUser);
+    try {
+      const storedUser = authService.getCurrentUser();
+      if (storedUser) {
+        setUser(storedUser);
+      }
+    } catch (e) {
+      console.error("Auth init error:", e);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await authService.logout();
     setUser(null);
   };
 

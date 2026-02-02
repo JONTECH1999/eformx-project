@@ -61,7 +61,8 @@ body {
 .header-logo {
   /* scale with header height without growing the header itself */
   height: auto;
-  max-height: clamp(70px, 5vw, 80px);  /* <-- smaller, safe range */
+  max-height: clamp(70px, 5vw, 80px);
+  /* <-- smaller, safe range */
   width: auto;
   object-fit: contain;
   /* move the logo slightly lower (responsive) */
@@ -197,7 +198,8 @@ body {
 
 /* ==================== FORM CARD ==================== */
 .form-card {
-  background: linear-gradient(135deg, #5a8a96 0%, var(--primary-teal) 100%);
+  background: #1a5f6f !important;
+  background: linear-gradient(135deg, #5a8a96 0%, #1a5f6f 100%) !important;
   border-radius: var(--border-radius);
   padding: 28px;
   color: var(--text-light);
@@ -221,10 +223,15 @@ body {
 }
 
 .form-card h2 {
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 24px !important;
+  font-weight: 700 !important;
   margin: 0;
   line-height: 1.3;
+  color: #ffffff !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: block !important;
+  /* Explicit white color for visibility */
 }
 
 .card-actions {
@@ -246,11 +253,15 @@ body {
 }
 
 .form-description {
-  font-size: 14px;
+  font-size: 14px !important;
   line-height: 1.6;
   margin-bottom: auto;
-  opacity: 0.95;
+  opacity: 0.95 !important;
   font-weight: 400;
+  color: #ffffff !important;
+  visibility: visible !important;
+  display: block !important;
+  /* Explicit white color for visibility */
 }
 
 .card-footer {
@@ -380,12 +391,59 @@ body {
   }
 }
 
-/* ==================== ANIMATIONS ==================== */
+.loading-state,
+.error-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px;
+  font-size: 16px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+.loading-state {
+  color: var(--teal-light);
+  font-weight: 500;
+}
+
+.error-state {
+  color: #e74c3c;
+  border: 1px solid #fab1a0;
+}
+
+.empty-state {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 40px;
+  background: white;
+  border: 4px dashed #e8ecef;
+  border-radius: var(--border-radius);
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.empty-state p {
+  font-size: 18px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.forms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -433,7 +491,8 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5); /* semi-transparent background */
+  background: rgba(0, 0, 0, 0.5);
+  /* semi-transparent background */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -441,7 +500,7 @@ body {
 }
 
 /* Profile Modal Overlay - lighter background to show header */
-.profile-modal + .modal-overlay,
+.profile-modal+.modal-overlay,
 .modal-overlay:has(.profile-modal) {
   background: rgba(0, 0, 0, 0.4);
 }
@@ -502,8 +561,15 @@ body {
 
 /* Optional fade in animation */
 @keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 /* Delete Modal */
@@ -682,7 +748,7 @@ body {
     linear-gradient(135deg,
       #d9d9d9 0%,
       #f7f7f7 18%,
-      #cfcfcf 40%,  
+      #cfcfcf 40%,
       #ffffff 58%,
       #c9c9c9 78%,
       #e6e6e6 100%);
@@ -970,6 +1036,7 @@ body {
     width: 100%;
   }
 }
+
 .clickable-card {
   cursor: pointer;
   transition: transform 0.2s ease;
@@ -978,13 +1045,14 @@ body {
 .clickable-card:hover {
   transform: scale(1.02);
 }
+
 .analytics-dashboard-modal {
   background: white;
   width: 500px;
   border-radius: 20px;
   padding: 30px;
   position: relative;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
 .analytics-top {
@@ -1028,7 +1096,8 @@ body {
 
 /* Analytics Stats Modal - Percentage Overview */
 .analytics-stats-modal {
-  background: linear-gradient(135deg, #ffffff 0%, #ffffff 100%);
+  background: white;
+  border: 1px solid #ddd;
   border-radius: 20px;
   padding: 2rem;
   max-width: 500px;
@@ -1082,19 +1151,18 @@ body {
 
 .stat-card {
   /* background: rgba(255, 255, 255, 0.15); */
-  background: var(--primary-teal);
-  backdrop-filter: blur(10px);
+  background: #f8fafb;
   border-radius: 15px;
   padding: 1.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid #e0e0e0;
   transition: all 0.3s ease;
 }
 
 .stat-card:hover {
-  background: rgb(0, 0, 0);
+  background: var(--teal-dark);
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
@@ -1102,7 +1170,7 @@ body {
 .stat-label {
   font-size: 1.1rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  color: #2c3e50;
   letter-spacing: 0.5px;
 }
 
@@ -1277,6 +1345,7 @@ body {
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);

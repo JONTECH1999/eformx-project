@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "../styles/Dashboard.css";
 import CreateFormModal from "./Createformmodal";
 import logo from "../assets/eFormX.png";
 import headerLogo from "../assets/logoforheader.png";
+import formService from "../services/formService";
 import {
   FaBell,
   FaPlus,
@@ -17,9 +18,13 @@ import {
   FaCamera,
 } from "react-icons/fa";
 
-function Dashboard() {
+function Dashboard({ onLogout, userEmail }) {
   const defaultAdminAvatar =
     "https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=200";
+
+  const [forms, setForms] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -40,46 +45,40 @@ function Dashboard() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isProfileEditMode, setIsProfileEditMode] = useState(false);
   const [adminName, setAdminName] = useState("Admin");
-  const [adminEmail, setAdminEmail] = useState("admin@eformx.com");
+  const [adminEmail, setAdminEmail] = useState(userEmail || "admin@eformx.com");
   const [adminAvatar, setAdminAvatar] = useState(defaultAdminAvatar);
   const [tempAdminName, setTempAdminName] = useState("Admin");
-  const [tempAdminEmail, setTempAdminEmail] = useState("admin@eformx.com");
+  const [tempAdminEmail, setTempAdminEmail] = useState(userEmail || "admin@eformx.com");
   const [tempAdminAvatar, setTempAdminAvatar] = useState(defaultAdminAvatar);
 
-  const [forms, setForms] = useState([
-    {
-      id: 1,
-      title: "Customer Feedback",
-      description:
-        "Help us improve our service by providing your valuable feedback.",
-      fields: [],
-      analytics: {
-        totalRespondents: 156,
-        completionRate: 87,
-        recentActivity: 12,
-      },
-      responses: [
-        {
-          date: "Jan 25, 2026",
-          name: "Juan Dela Cruz",
-          choice: "Very Satisfied",
-          feedback: "Great service!",
-        },
-        {
-          date: "Jan 26, 2026",
-          name: "Maria Santos",
-          choice: "Satisfied",
-          feedback: "Can improve response time.",
-        },
-        {
-          date: "Jan 27, 2026",
-          name: "Pedro Reyes",
-          choice: "Neutral",
-          feedback: "No additional comments.",
-        },
-      ],
-    },
-  ]);
+  useEffect(() => {
+    fetchForms();
+  }, []);
+
+  const fetchForms = async () => {
+    try {
+      setLoading(true);
+      const data = await formService.getForms();
+      console.log('=== FETCH FORMS DEBUG ===');
+      console.log('Raw API response:', data);
+      console.log('Is array?', Array.isArray(data));
+      console.log('Length:', data?.length);
+
+      if (Array.isArray(data) && data.length > 0) {
+        console.log('First form structure:', data[0]);
+        console.log('First form title:', data[0]?.title);
+        console.log('First form description:', data[0]?.description);
+      }
+
+      setForms(Array.isArray(data) ? data : []);
+      console.log('Forms set to state');
+    } catch (err) {
+      console.error("Failed to fetch forms:", err);
+      setError("Failed to load forms. Please refresh.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // ===== MODAL HANDLERS =====
   const openModal = () => setIsModalOpen(true);
@@ -90,26 +89,28 @@ function Dashboard() {
   };
 
   // ===== CREATE / UPDATE =====
-  const handleCreateForm = (formData) => {
-    if (isEditMode) {
-      const updatedForms = forms.map((form) =>
-        form.id === formToEdit.id ? { ...formData, id: form.id } : form
-      );
-      setForms(updatedForms);
-    } else {
-      const formWithId = {
-        ...formData,
-        id: Date.now(),
-        analytics: {
-          totalRespondents: 0,
-          completionRate: 0,
-          recentActivity: 0,
-        },
-        responses: [],
-      };
-      setForms([...forms, formWithId]);
+  const handleCreateForm = async (formData) => {
+    try {
+      if (isEditMode) {
+        const updated = await formService.updateForm(formToEdit.id, {
+          ...formData,
+          status: formToEdit.status // Maintain current status on edit
+        });
+        console.log('Updated form data:', updated);
+        setForms(forms.map((f) => (f.id === updated.id ? updated : f)));
+      } else {
+        const created = await formService.createForm({
+          ...formData,
+          status: 'active' // Default status
+        });
+        console.log('Created form data:', created);
+        setForms([created, ...forms]);
+      }
+      closeModal();
+    } catch (err) {
+      console.error("Failed to save form:", err);
+      alert("Failed to save form. Please try again.");
     }
-    closeModal();
   };
 
   // ===== EDIT =====
@@ -122,7 +123,7 @@ function Dashboard() {
 
   // ===== SHARE =====
   const handleShareForm = (formId) => {
-    const link = `https://example.com/form/${formId}`;
+    const link = `${window.location.origin}/form/${formId}`;
     setShareLink(link);
     setIsShareModalOpen(true);
   };
@@ -136,10 +137,16 @@ function Dashboard() {
     setFormToDelete(formId);
     setIsDeleteModalOpen(true);
   };
-  const confirmDelete = () => {
-    setForms(forms.filter((form) => form.id !== formToDelete));
-    setIsDeleteModalOpen(false);
-    setFormToDelete(null);
+  const confirmDelete = async () => {
+    try {
+      await formService.deleteForm(formToDelete);
+      setForms(forms.filter((form) => form.id !== formToDelete));
+      setIsDeleteModalOpen(false);
+      setFormToDelete(null);
+    } catch (err) {
+      console.error("Failed to delete form:", err);
+      alert("Failed to delete form.");
+    }
   };
   const cancelDelete = () => {
     setIsDeleteModalOpen(false);
@@ -147,17 +154,40 @@ function Dashboard() {
   };
 
   // ===== ANALYTICS (Stats Overview) =====
-  const handleAnalytics = (formId) => {
-    const selected = forms.find((f) => f.id === formId);
-    setSelectedFormAnalytics(selected);
-    setIsAnalyticsOpen(true);
+  const handleAnalytics = async (formId) => {
+    try {
+      const analyticsData = await formService.getFormAnalytics(formId) || {};
+      setSelectedFormAnalytics({
+        id: analyticsData.form_id || formId,
+        title: analyticsData.title || "Form Analytics",
+        analytics: analyticsData.analytics || {
+          totalRespondents: 0,
+          completionRate: 0,
+          recentActivity: 0
+        }
+      });
+      setIsAnalyticsOpen(true);
+    } catch (err) {
+      console.error("Failed to fetch analytics:", err);
+      alert("Failed to load analytics data.");
+    }
   };
 
   // ===== VIEW RESPONSES (Detailed Table) =====
-  const handleViewResponses = (formId) => {
-    const selected = forms.find((f) => f.id === formId);
-    setSelectedFormResponses(selected);
-    setIsResponsesOpen(true);
+  const handleViewResponses = async (formId) => {
+    try {
+      const responses = await formService.getFormResponses(formId);
+      console.log('Fetched responses:', responses);
+      const selected = forms.find((f) => String(f.id) === String(formId));
+      setSelectedFormResponses({
+        ...(selected || {}),
+        responses: Array.isArray(responses) ? responses : []
+      });
+      setIsResponsesOpen(true);
+    } catch (err) {
+      console.error("Failed to fetch responses:", err);
+      alert("Could not load responses.");
+    }
   };
 
   // ===== EXPORT CSV =====
@@ -167,14 +197,14 @@ function Dashboard() {
     const headers = [
       "Submission Date",
       "Respondent Name",
-      "Choice Selected",
-      "Additional Feedback",
+      "Respondent Email",
+      "Responses Summary",
     ];
     const rows = selectedFormResponses.responses.map((r) => [
-      r.date,
-      r.name,
-      r.choice,
-      r.feedback,
+      new Date(r.created_at).toLocaleDateString(),
+      r.respondent_name || "Anonymous",
+      r.respondent_email || "N/A",
+      JSON.stringify(r.responses || {}).substring(0, 100),
     ]);
 
     let csvContent = headers.join(",") + "\n";
@@ -207,17 +237,17 @@ function Dashboard() {
   const handleSaveProfile = () => {
     const trimmedName = tempAdminName.trim();
     const trimmedEmail = tempAdminEmail.trim();
-    
+
     if (!trimmedName) {
       alert("Please enter a name");
       return;
     }
-    
+
     if (!trimmedEmail || !trimmedEmail.includes("@")) {
       alert("Please enter a valid email address");
       return;
     }
-    
+
     setAdminName(trimmedName);
     setAdminEmail(trimmedEmail);
     setAdminAvatar(tempAdminAvatar || defaultAdminAvatar);
@@ -230,6 +260,12 @@ function Dashboard() {
     setTempAdminEmail(adminEmail);
     setTempAdminAvatar(adminAvatar);
     setIsProfileEditMode(false);
+  };
+
+  const handleLogout = () => {
+    if (onLogout) {
+      onLogout();
+    }
   };
 
   const handleProfileImageChange = (e) => {
@@ -280,61 +316,88 @@ function Dashboard() {
           </div>
 
           <div className="forms-grid">
-            {forms.map((form) => (
-              <div
-                key={form.id}
-                className="form-card"
-                onClick={() => handleViewResponses(form.id)}
-                style={{ cursor: "pointer" }}
-              >
-                <div className="form-card-header">
-                  <h2>{form.title}</h2>
-                  <div className="card-actions">
-                    <FaChartBar
-                      className="action-icon"
-                      title="Analytics"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleAnalytics(form.id);
-                      }}
-                    />
-                    <FaTrash
-                      className="action-icon"
-                      title="Delete"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteForm(form.id);
-                      }}
-                    />
-                  </div>
-                </div>
-                <p className="form-description">{form.description}</p>
-                <div className="card-footer">
-                  <button
-                    className="btn-link"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleShareForm(form.id);
-                    }}
-                  >
-                    <FaShareAlt /> Share
-                  </button>
-                  <button
-                    className="btn-link"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEditForm(form.id);
-                    }}
-                  >
-                    <FaEdit /> Edit
-                  </button>
-                </div>
+            {loading ? (
+              <div className="loading-state">Loading your forms...</div>
+            ) : error ? (
+              <div className="error-state">{error}</div>
+            ) : forms.length === 0 ? (
+              <div className="empty-state">
+                <FaPlus size={48} style={{ opacity: 0.3, marginBottom: '1rem' }} />
+                <p>No forms created yet.</p>
+                <button className="create-form-btn" onClick={openModal} style={{ marginTop: '1rem' }}>
+                  Create Your First Form
+                </button>
               </div>
-            ))}
+            ) : forms.length > 0 ? (
+              forms.map((form) => {
+                console.log('Rendering form card:', form.id, 'Title:', form.title);
+                return (
+                  <div
+                    key={form.id}
+                    className="form-card"
+                    onClick={() => handleViewResponses(form.id)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <div className="form-card-header">
+                      <h2>{form.title || "Untitled Form"}</h2>
+                      <div className="card-actions">
+                        <FaChartBar
+                          className="action-icon"
+                          title="Analytics"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAnalytics(form.id);
+                          }}
+                        />
+                        <FaTrash
+                          className="action-icon"
+                          title="Delete"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteForm(form.id);
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <p className="form-description">{form.description || "No description provided."}</p>
+                    <div className="card-footer">
+                      <button
+                        className="btn-link"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleShareForm(form.id);
+                        }}
+                      >
+                        <FaShareAlt /> Share
+                      </button>
+                      <button
+                        className="btn-link"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditForm(form.id);
+                        }}
+                      >
+                        <FaEdit /> Edit
+                      </button>
+                    </div>
+                  </div>
+                )
+              })
+            ) : (
+              <div className="empty-state">
+                <FaPlus size={48} style={{ opacity: 0.3, marginBottom: '1rem' }} />
+                <p>No valid forms found.</p>
+                <button className="create-form-btn" onClick={openModal} style={{ marginTop: '1rem' }}>
+                  Create Your First Form
+                </button>
+              </div>
+            )}
 
-            <div className="add-form-card" onClick={openModal}>
-              <FaPlus className="add-icon" />
-            </div>
+            {!loading && !error && forms.length > 0 && (
+              <div className="add-form-card" onClick={openModal}>
+                <FaPlus className="add-icon" />
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -422,18 +485,18 @@ function Dashboard() {
                 </div>
               </div>
             </div>
-              <div className="analytics-stats-footer">
-                <button
-                  className="export-csv-btn"
-                  onClick={() => {
-                    setSelectedFormResponses(selectedFormAnalytics);
-                    handleExportCSV();
-                  }}
-                >
-                  <FaDownload style={{ marginRight: "8px" }} />
-                  Export CSV
-                </button>
-              </div>
+            <div className="analytics-stats-footer">
+              <button
+                className="export-csv-btn"
+                onClick={() => {
+                  setSelectedFormResponses(selectedFormAnalytics);
+                  handleExportCSV();
+                }}
+              >
+                <FaDownload style={{ marginRight: "8px" }} />
+                Export CSV
+              </button>
+            </div>
 
           </div>
         </div>
@@ -461,23 +524,36 @@ function Dashboard() {
                   <tr>
                     <th>Submission Date</th>
                     <th>Respondent Name</th>
-                    <th>Choice Selected</th>
-                    <th>Additional Feedback</th>
+                    <th>Respondent Email</th>
+                    <th>Responses Summary</th>
                     <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedFormResponses.responses.map((response, index) => (
-                    <tr key={index}>
-                      <td>{response.date}</td>
-                      <td>{response.name}</td>
-                      <td>{response.choice}</td>
-                      <td>{response.feedback}</td>
-                      <td>
-                        <button className="view-btn">View</button>
+                  {selectedFormResponses.responses && selectedFormResponses.responses.length > 0 ? (
+                    selectedFormResponses.responses.map((response, index) => {
+                      const responsesStr = JSON.stringify(response.responses || {});
+                      return (
+                        <tr key={index}>
+                          <td>{new Date(response.created_at).toLocaleDateString()}</td>
+                          <td>{response.respondent_name || "Anonymous"}</td>
+                          <td>{response.respondent_email || "N/A"}</td>
+                          <td title={responsesStr}>
+                            {responsesStr.substring(0, 50)}{responsesStr.length > 50 ? "..." : ""}
+                          </td>
+                          <td>
+                            <button className="view-btn">View Detail</button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan="5" style={{ textAlign: "center", padding: "40px", color: "#666" }}>
+                        No responses submitted yet.
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
@@ -534,7 +610,7 @@ function Dashboard() {
                       <FaUserEdit /> Edit Profile
                     </button>
 
-                    <button className="logout-btn">Log out</button>
+                    <button className="logout-btn" onClick={handleLogout}>Log out</button>
                   </>
                 ) : (
                   // EDIT MODE

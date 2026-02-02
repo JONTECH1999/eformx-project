@@ -33,6 +33,7 @@ class FormController extends Controller
         ]);
 
         $form = Auth::user()->forms()->create($validated);
+        $form->load('responses'); // Eager load responses for consistency
 
         return response()->json($form, 201);
     }
@@ -84,6 +85,7 @@ class FormController extends Controller
         ]);
 
         $form->update($validated);
+        $form->load('responses'); // Refresh and eager load
 
         return response()->json($form);
     }
