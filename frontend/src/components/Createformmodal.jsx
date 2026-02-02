@@ -12,7 +12,6 @@ function CreateFormModal({
   const [formTitle, setFormTitle] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [fields, setFields] = useState([]);
-  const [fieldErrors, setFieldErrors] = useState({}); // { [fieldId]: 'error message' }
 
   // ✅ PREFILL WHEN EDITING
   useEffect(() => {
@@ -50,13 +49,6 @@ function CreateFormModal({
         field.id === fieldId ? { ...field, [property]: value } : field
       )
     );
-    if (property === "label") {
-      setFieldErrors((prev) => {
-        const next = { ...prev };
-        if (value && value.trim().length > 0) delete next[fieldId];
-        return next;
-      });
-    }
   };
 
   const removeField = (fieldId) => {
@@ -112,20 +104,8 @@ function CreateFormModal({
     if (fields.length === 0)
       return alert("Please add at least one field to your form");
 
-    // Inline validation for missing field labels
-    const missing = fields.filter((f) => !f.label.trim()).map((f) => f.id);
-    if (missing.length > 0) {
-      const errs = {};
-      missing.forEach((id) => (errs[id] = "Field label is required"));
-      setFieldErrors(errs);
-      // Scroll to the first invalid field label input if present
-      const firstId = missing[0];
-      setTimeout(() => {
-        const el = document.querySelector(`[data-field-label="${firstId}"]`);
-        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 0);
-      return;
-    }
+    if (fields.some((f) => !f.label.trim()))
+      return alert("Please add labels to all fields");
 
     if (
       fields.some(
@@ -222,12 +202,7 @@ function CreateFormModal({
                     onChange={(e) =>
                       updateField(field.id, "label", e.target.value)
                     }
-                    className={fieldErrors[field.id] ? "field-input error" : "field-input"}
-                    data-field-label={field.id}
                   />
-                  {fieldErrors[field.id] && (
-                    <small className="error-text">{fieldErrors[field.id]}</small>
-                  )}
                 </div>
 
                 {field.type === "text" && (
