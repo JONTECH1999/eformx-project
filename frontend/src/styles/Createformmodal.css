@@ -304,6 +304,16 @@
   box-shadow: 0 0 0 3px rgba(90, 138, 150, 0.1);
 }
 
+.field-input.error {
+  border-color: #d9363e;
+  box-shadow: 0 0 0 3px rgba(217, 54, 62, 0.08);
+}
+
+.error-text {
+  color: #d9363e;
+  font-size: 12px;
+}
+
 .field-input::placeholder {
   color: #b8c5ce;
 }

@@ -37,11 +37,17 @@ api.interceptors.response.use(
     console.error('API Error:', error.config?.url, 'Status:', error.response?.status);
     console.error('Error details:', error.response?.data);
     if (error.response?.status === 401) {
-      // Token expired or invalid
-      console.warn('Unauthorized - clearing auth and redirecting to login');
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('user');
-      window.location.href = '/';
+      const url = (error.config?.url || '').toString();
+      const isLoginAttempt = url.includes('/login');
+      if (!isLoginAttempt) {
+        // Token expired or invalid on a protected route
+        console.warn('Unauthorized - clearing auth and redirecting to login');
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user');
+        window.location.href = '/';
+        return; // stop further handling after redirect
+      }
+      // On failed login attempt, do not redirect; let UI show the error
     }
     return Promise.reject(error);
   }
