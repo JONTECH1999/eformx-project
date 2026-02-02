@@ -46,13 +46,21 @@ function CreateAccountModal({ isOpen, onClose, onCreate, onUpdate, account }) {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     // Validate required fields
     if (!form.name || !form.email || (!account && !form.password)) {
       setIsError(true);
       setMessage("Please fill in all required fields.");
+      return;
+    }
+
+    // Stricter email format check: require domain + TLD
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    if (!emailRegex.test(form.email)) {
+      setIsError(true);
+      setMessage("Please enter a valid email (e.g., name@example.com).");
       return;
     }
 
@@ -71,19 +79,26 @@ function CreateAccountModal({ isOpen, onClose, onCreate, onUpdate, account }) {
       status: account ? form.status : "Active", // force Active on create
     };
 
-    if (account) {
-      onUpdate(accountData);
-      setMessage("Account successfully updated!");
-    } else {
-      onCreate(accountData);
-      setMessage("Account successfully created!");
+    try {
+      if (account) {
+        await onUpdate(accountData);
+        setMessage("Account successfully updated!");
+      } else {
+        await onCreate(accountData);
+        setMessage("Account successfully created!");
+      }
+      setIsError(false);
+      setTimeout(() => {
+        onClose();
+      }, 1200);
+    } catch (err) {
+      // Surface backend validation or generic errors
+      const apiMsg = err?.response?.data?.message
+        || (Array.isArray(err?.response?.data?.errors) ? err.response.data.errors.join(', ') : null)
+        || "An error occurred. Please try again.";
+      setIsError(true);
+      setMessage(apiMsg);
     }
-
-    setIsError(false);
-
-    setTimeout(() => {
-      onClose();
-    }, 1500);
   };
 
   return (
@@ -115,6 +130,8 @@ function CreateAccountModal({ isOpen, onClose, onCreate, onUpdate, account }) {
             placeholder="Email"
             value={form.email}
             onChange={handleChange}
+            pattern="[^\s@]+@[^\s@]+\.[^\s@]{2,}"
+            title="Enter a valid email like name@example.com"
             disabled={!!account}
           />
 

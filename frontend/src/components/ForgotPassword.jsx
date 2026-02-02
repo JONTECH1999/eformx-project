@@ -1,23 +1,56 @@
-import React from "react";
+import React, { useState } from "react";
 import "../styles/Login.css";
 import { FaEnvelope, FaArrowLeft } from "react-icons/fa";
+import authService from "../services/authService";
+import { useNavigate } from "react-router-dom";
 
-function ForgotPassword({ goBack }) {
+function ForgotPassword() {
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const submit = async () => {
+    setError("");
+    setMessage("");
+    if (!email) {
+      setError("Please enter your email.");
+      return;
+    }
+    setLoading(true);
+    try {
+      await authService.forgotPassword(email);
+      setMessage("Reset link sent. Please check your email.");
+    } catch (e) {
+      setError(e?.response?.data?.message || "Unable to send reset link.");
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <div className="login-container">
       <h1 className="logo">eFormX</h1>
 
       <div className="login-card">
-        <FaArrowLeft className="back-icon" onClick={goBack} />
+        <FaArrowLeft className="back-icon" onClick={() => navigate('/')} />
 
         <h2>Forgot Password</h2>
 
         <div className="input-group">
           <FaEnvelope className="icon" />
-          <input type="email" placeholder="Enter Your Email Account" />
+          <input
+            type="email"
+            placeholder="Enter Your Email Account"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
         </div>
-
-        <button className="login-btn">Send Reset Link</button>
+        {error && <p className="error-message">{error}</p>}
+        {message && <p className="success-message">{message}</p>}
+        <button className="login-btn" onClick={submit} disabled={loading}>
+          {loading ? "Sending..." : "Send Reset Link"}
+        </button>
       </div>
     </div>
   );

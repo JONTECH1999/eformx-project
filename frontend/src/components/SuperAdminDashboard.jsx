@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "../styles/SuperAdminDashboard.css";
 import { FaBell, FaPlus, FaEdit, FaTrash, FaUserEdit, FaCamera } from "react-icons/fa";
 import CreateAccountModal from "./CreateAccountModal";
@@ -18,6 +18,25 @@ function SuperAdminDashboard() {
   const [accountToEdit, setAccountToEdit] = useState(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [profileMessage, setProfileMessage] = useState("");
+
+  // Load accounts from backend on mount
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        setLoading(true);
+        const users = await userService.getUsers();
+        setAccounts(users);
+        setError("");
+      } catch (e) {
+        console.error("Failed to load users:", e);
+        setError("Failed to load accounts. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadUsers();
+  }, []);
 
   // ✅ Persistent Super Admin Profile
   const [superAdminProfile, setSuperAdminProfile] = useState(() => {
@@ -36,14 +55,26 @@ function SuperAdminDashboard() {
       "superAdminProfile",
       JSON.stringify(superAdminProfile)
     );
-    alert("Profile updated!");
-    setIsEditProfileOpen(false);
-    setIsProfileOpen(false);
+    // Show inline success message inside the Edit Profile modal
+    setProfileMessage("Profile updated!");
+    // Auto-hide message after 2 seconds
+    setTimeout(() => {
+      setProfileMessage("");
+    }, 2000);
   };
 
   // Account Logic
-  const handleCreateAccount = (account) => {
-    setAccounts([...accounts, account]);
+  const handleCreateAccount = async (account) => {
+    try {
+      const created = await userService.createUser(account);
+      setAccounts((prev) => [...prev, created]);
+      setError("");
+    } catch (e) {
+      console.error("Create user failed:", e);
+      const message = e?.response?.data?.message || "Failed to create account.";
+      setError(message);
+      throw e; // allow modal to surface error
+    }
   };
 
   const openEditModal = (index) => {
@@ -51,12 +82,25 @@ function SuperAdminDashboard() {
     setIsModalOpen(true);
   };
 
-  const handleUpdateAccount = (updatedAccount) => {
-    const updatedAccounts = [...accounts];
-    updatedAccounts[accountToEdit.index] = updatedAccount;
-    setAccounts(updatedAccounts);
-    setAccountToEdit(null);
-    setIsModalOpen(false);
+  const handleUpdateAccount = async (updatedAccount) => {
+    if (!accountToEdit) return;
+    try {
+      const id = accountToEdit.id;
+      const updated = await userService.updateUser(id, updatedAccount);
+      setAccounts((prev) => {
+        const copy = [...prev];
+        copy[accountToEdit.index] = updated;
+        return copy;
+      });
+      setAccountToEdit(null);
+      setIsModalOpen(false);
+      setError("");
+    } catch (e) {
+      console.error("Update user failed:", e);
+      const message = e?.response?.data?.message || "Failed to update account.";
+      setError(message);
+      throw e; // allow modal to surface error
+    }
   };
 
   const openDeleteModal = (index) => {
@@ -64,11 +108,22 @@ function SuperAdminDashboard() {
     setIsDeleteModalOpen(true);
   };
 
-  const confirmDelete = () => {
-    const updated = accounts.filter((_, i) => i !== accountToDelete);
-    setAccounts(updated);
-    setIsDeleteModalOpen(false);
-    setAccountToDelete(null);
+  const confirmDelete = async () => {
+    try {
+      const target = accounts[accountToDelete];
+      if (target?.id) {
+        await userService.deleteUser(target.id);
+      }
+      const updated = accounts.filter((_, i) => i !== accountToDelete);
+      setAccounts(updated);
+      setIsDeleteModalOpen(false);
+      setAccountToDelete(null);
+      setError("");
+    } catch (e) {
+      console.error("Delete user failed:", e);
+      const message = e?.response?.data?.message || "Failed to delete account.";
+      setError(message);
+    }
   };
 
 const handleLogout = async () => {
@@ -128,6 +183,17 @@ const handleLogout = async () => {
 
       {/* TABLE */}
       <div className="table-card">
+        {error && (
+          <div style={{
+            background: '#fee2e2',
+            color: '#991b1b',
+            padding: '10px 12px',
+            borderRadius: '8px',
+            marginBottom: '10px'
+          }}>
+            {error}
+          </div>
+        )}
         <table>
           <thead>
             <tr>
@@ -139,7 +205,11 @@ const handleLogout = async () => {
             </tr>
           </thead>
           <tbody>
-            {accounts.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan="5" className="empty-row">Loading...</td>
+              </tr>
+            ) : accounts.length === 0 ? (
               <tr>
                 <td colSpan="5" className="empty-row">
                   No accounts created yet
@@ -236,6 +306,12 @@ const handleLogout = async () => {
             >
               ✖
             </span>
+
+            {profileMessage && (
+              <div className="success-banner" role="status" aria-live="polite">
+                {profileMessage}
+              </div>
+            )}
 
             <h3 className="profile-name">Edit Profile</h3>
 

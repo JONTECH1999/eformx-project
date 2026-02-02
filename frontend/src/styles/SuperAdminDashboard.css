@@ -256,6 +256,20 @@ tbody tr:hover {
   color: #000;
 }
 
+/* Inline success banner inside the profile modal */
+.success-banner {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #16a34a; /* green */
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-weight: 600;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
 /* Profile picture */
  .profile-modal-card .profile-picture {
   position: relative; 

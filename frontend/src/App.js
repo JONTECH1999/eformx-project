@@ -5,6 +5,8 @@ import Dashboard from "./components/Dashboard";
 import SuperAdminDashboard from "./components/SuperAdminDashboard";
 import PublicFormPage from "./pages/PublicFormPage";
 import authService from "./services/authService";
+import ForgotPassword from "./components/ForgotPassword";
+import ResetPassword from "./components/ResetPassword";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -41,6 +43,9 @@ function App() {
       <Routes>
         {/* Public Form Route - Accessible by anyone */}
         <Route path="/form/:id" element={<PublicFormPage />} />
+        {/* Password reset routes */}
+        <Route path="/forgot" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* Auth Routes */}
         <Route

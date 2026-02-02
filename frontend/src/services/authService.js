@@ -51,6 +51,24 @@ const authService = {
     isAuthenticated() {
         return !!this.getCurrentUser();
     },
+
+    /**
+     * Request password reset link
+     * @param {string} email
+     */
+    async forgotPassword(email) {
+        const res = await api.post('/password/forgot', { email });
+        return res.data;
+    },
+
+    /**
+     * Reset password with token
+     * @param {object} payload { token, email, password, password_confirmation }
+     */
+    async resetPassword(payload) {
+        const res = await api.post('/password/reset', payload);
+        return res.data;
+    },
 };
 
 export default authService;

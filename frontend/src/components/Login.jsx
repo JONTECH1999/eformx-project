@@ -3,13 +3,15 @@ import "../styles/Login.css";
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import logo from "../assets/eFormX.png";
 import authService from "../services/authService";
+import { useNavigate } from "react-router-dom";
 
-function Login({ goRegister, goForgot, setUser }) {
+function Login({ goRegister, setUser }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -84,7 +86,7 @@ function Login({ goRegister, goForgot, setUser }) {
         </button>
 
         <div className="links">
-          <span onClick={goForgot}>Forgot Password</span>
+          <span onClick={() => navigate('/forgot')}>Forgot Password</span>
           {goRegister && <span onClick={goRegister}>Register</span>}
         </div>
       </div>

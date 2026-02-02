@@ -25,7 +25,8 @@ class UserController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
+            // Require RFC-compliant email and a resolvable domain
+            'email' => 'required|email:rfc,dns|unique:users,email',
             'password' => 'required|string|min:6',
             'role' => 'nullable|string|max:50',
             'status' => 'nullable|in:Active,Inactive',
@@ -62,7 +63,8 @@ class UserController extends Controller
 
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
-            'email' => ['sometimes', 'required', 'email', Rule::unique('users')->ignore($user->id)],
+            // RFC email + DNS domain check on update as well
+            'email' => ['sometimes', 'required', 'email:rfc,dns', Rule::unique('users')->ignore($user->id)],
             'password' => 'sometimes|nullable|string|min:6',
             'role' => 'nullable|string|max:50',
             'status' => 'nullable|in:Active,Inactive',
