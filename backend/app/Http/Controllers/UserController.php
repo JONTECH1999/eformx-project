@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\SuperAdmin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -12,8 +13,13 @@ class UserController extends Controller
     /**
      * Display a listing of all users.
      */
-    public function index()
+    public function index(Request $request)
     {
+        // Only SuperAdmin can list users
+        if (!($request->user() instanceof SuperAdmin)) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
         $users = User::latest()->get();
         return response()->json($users);
     }
@@ -23,6 +29,11 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
+        // Only SuperAdmin can create users
+        if (!($request->user() instanceof SuperAdmin)) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             // Require RFC-compliant email and a resolvable domain
@@ -48,8 +59,13 @@ class UserController extends Controller
     /**
      * Display the specified user.
      */
-    public function show($id)
+    public function show(Request $request, $id)
     {
+        // Only SuperAdmin can view specific user
+        if (!($request->user() instanceof SuperAdmin)) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
         $user = User::findOrFail($id);
         return response()->json($user);
     }
@@ -59,6 +75,11 @@ class UserController extends Controller
      */
     public function update(Request $request, $id)
     {
+        // Only SuperAdmin can update users
+        if (!($request->user() instanceof SuperAdmin)) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
         $user = User::findOrFail($id);
 
         $validated = $request->validate([
@@ -85,8 +106,13 @@ class UserController extends Controller
     /**
      * Remove the specified user.
      */
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
+        // Only SuperAdmin can delete users
+        if (!($request->user() instanceof SuperAdmin)) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
         $user = User::findOrFail($id);
         $user->delete();
 
