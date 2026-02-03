@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import "../styles/Login.css";
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
-import logo from "../assets/eFormX.png";
+import logo from "../assets/eFormX1.png";
 
 import authService from "../services/authService";
 
