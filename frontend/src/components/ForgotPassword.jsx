@@ -3,6 +3,7 @@ import "../styles/Login.css";
 import { FaEnvelope, FaArrowLeft } from "react-icons/fa";
 import authService from "../services/authService";
 import { useNavigate } from "react-router-dom";
+import logo from "../assets/eFormX1.png";
 
 function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -30,7 +31,9 @@ function ForgotPassword() {
   };
   return (
     <div className="login-container">
-      <h1 className="logo">eFormX</h1>
+      <div className="logo-container">
+        <img src={logo} alt="eFormX Logo" className="logo" />
+      </div>
 
       <div className="login-card">
         <FaArrowLeft className="back-icon" onClick={() => navigate('/')} />

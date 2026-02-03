@@ -92,6 +92,31 @@
   /* Take remaining space */
 }
 
+/* ==================== FIELD ERROR MESSAGE ==================== */
+.field-error-message {
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin-top: 8px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  border-left: 3px solid #dc2626;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* ==================== FORM HEADER SECTION ==================== */
 .form-header-section {
   background: linear-gradient(135deg, #5a8a96 0%, #1a5f6f 100%);

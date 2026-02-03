@@ -8,6 +8,8 @@ use App\Http\Controllers\UserController;
 
 // Public routes
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/password/forgot', [AuthController::class, 'forgotPassword']);
+Route::post('/password/reset', [AuthController::class, 'resetPassword']);
 Route::get('/forms/{id}/public', [FormController::class, 'showPublic']);
 Route::post('/forms/{formId}/responses', [FormResponseController::class, 'store']);
 

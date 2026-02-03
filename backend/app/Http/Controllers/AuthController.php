@@ -88,10 +88,15 @@ class AuthController extends Controller
 
         $email = $request->input('email');
 
-        // Find user (regular users only for now)
+        // Find user (check both Users and SuperAdmins)
         $user = User::where('email', $email)->first();
-
+        $admin = null;
+        
         if (!$user) {
+            $admin = SuperAdmin::where('email', $email)->first();
+        }
+
+        if (!$user && !$admin) {
             return response()->json(['message' => 'Email not registered'], 404);
         }
 
@@ -133,18 +138,33 @@ class AuthController extends Controller
             return response()->json(['message' => 'Invalid or expired token'], 400);
         }
 
+        // Check both Users and SuperAdmins
         $user = User::where('email', $request->email)->first();
-
+        $admin = null;
+        
         if (!$user) {
+            $admin = SuperAdmin::where('email', $request->email)->first();
+        }
+
+        if (!$user && !$admin) {
             return response()->json(['message' => 'Email not registered'], 404);
         }
 
-        $user->password = Hash::make($request->password);
-        $user->save();
+        // Update password for the found account
+        if ($user) {
+            $user->password = Hash::make($request->password);
+            $user->save();
+            // Revoke existing API tokens
+            $user->tokens()->delete();
+        } else {
+            $admin->password = Hash::make($request->password);
+            $admin->save();
+            // Revoke existing API tokens
+            $admin->tokens()->delete();
+        }
 
-        // Invalidate reset token and revoke existing API tokens
+        // Invalidate reset token
         DB::table('password_reset_tokens')->where('email', $request->email)->delete();
-        $user->tokens()->delete();
 
         return response()->json(['message' => 'Password reset successful']);
     }

@@ -1,11 +1,13 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "../styles/Login.css";
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import logo from "../assets/eFormX1.png";
 
 import authService from "../services/authService";
 
-function Login({ setUser, goForgot }) {
+function Login({ setUser }) {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -84,7 +86,7 @@ function Login({ setUser, goForgot }) {
         </button>
 
         <div className="links">
-          <span onClick={goForgot}>Forgot Password</span>
+          <span onClick={() => navigate('/forgot')} style={{ cursor: 'pointer' }}>Forgot Password</span>
         </div>
       </div>
     </div>

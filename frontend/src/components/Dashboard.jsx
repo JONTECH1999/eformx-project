@@ -16,6 +16,7 @@ import {
   FaSave,
   FaTimes,
   FaCamera,
+  FaSearch,
 } from "react-icons/fa";
 
 function Dashboard({ onLogout, userEmail, userName }) {
@@ -41,6 +42,7 @@ function Dashboard({ onLogout, userEmail, userName }) {
 
   const [isResponsesOpen, setIsResponsesOpen] = useState(false);
   const [selectedFormResponses, setSelectedFormResponses] = useState(null);
+  const [responsesSearchTerm, setResponsesSearchTerm] = useState("");
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isProfileEditMode, setIsProfileEditMode] = useState(false);
@@ -50,6 +52,7 @@ function Dashboard({ onLogout, userEmail, userName }) {
   const [tempAdminName, setTempAdminName] = useState(userName || "Admin");
   const [tempAdminEmail, setTempAdminEmail] = useState(userEmail || "admin@eformx.com");
   const [tempAdminAvatar, setTempAdminAvatar] = useState(defaultAdminAvatar);
+  const [profileNotification, setProfileNotification] = useState({ type: "", message: "" });
 
   useEffect(() => {
     fetchForms();
@@ -243,6 +246,8 @@ function Dashboard({ onLogout, userEmail, userName }) {
     setTempAdminName(adminName);
     setTempAdminEmail(adminEmail);
     setTempAdminAvatar(adminAvatar);
+    // Clear any notifications
+    setProfileNotification({ type: "", message: "" });
   };
 
   const handleEditProfile = () => {
@@ -253,13 +258,16 @@ function Dashboard({ onLogout, userEmail, userName }) {
     const trimmedName = tempAdminName.trim();
     const trimmedEmail = tempAdminEmail.trim();
 
+    // Clear previous notifications
+    setProfileNotification({ type: "", message: "" });
+
     if (!trimmedName) {
-      alert("Please enter a name");
+      setProfileNotification({ type: "error", message: "Please enter a name" });
       return;
     }
 
     if (!trimmedEmail || !trimmedEmail.includes("@")) {
-      alert("Please enter a valid email address");
+      setProfileNotification({ type: "error", message: "Please enter a valid email address" });
       return;
     }
 
@@ -277,6 +285,14 @@ function Dashboard({ onLogout, userEmail, userName }) {
         setAdminAvatar(tempAdminAvatar || defaultAdminAvatar);
         setIsProfileEditMode(false);
 
+        // Show success notification
+        setProfileNotification({ type: "success", message: "Profile updated successfully!" });
+        
+        // Auto-hide success message after 3 seconds
+        setTimeout(() => {
+          setProfileNotification({ type: "", message: "" });
+        }, 3000);
+
         // Optional: Refresh stored user in memory for current session
         try {
           const storedStr = localStorage.getItem('user');
@@ -286,7 +302,8 @@ function Dashboard({ onLogout, userEmail, userName }) {
         } catch {}
       } catch (err) {
         console.error('Failed to save profile:', err);
-        alert('Failed to save profile. Please try again.');
+        const errorMsg = err?.response?.data?.message || "Failed to save profile. Please try again.";
+        setProfileNotification({ type: "error", message: errorMsg });
       }
     })();
   };
@@ -297,6 +314,8 @@ function Dashboard({ onLogout, userEmail, userName }) {
     setTempAdminEmail(adminEmail);
     setTempAdminAvatar(adminAvatar);
     setIsProfileEditMode(false);
+    // Clear notifications
+    setProfileNotification({ type: "", message: "" });
   };
 
   const handleLogout = () => {
@@ -315,6 +334,17 @@ function Dashboard({ onLogout, userEmail, userName }) {
       reader.readAsDataURL(file);
     }
   };
+
+  const filteredResponses =
+    selectedFormResponses && Array.isArray(selectedFormResponses.responses)
+      ? selectedFormResponses.responses.filter((response) => {
+          const term = responsesSearchTerm.trim().toLowerCase();
+          if (!term) return true;
+          const name = (response.respondent_name || "").toLowerCase();
+          const email = (response.respondent_email || "").toLowerCase();
+          return name.includes(term) || email.includes(term);
+        })
+      : [];
 
   return (
     <div className="dashboard">
@@ -559,11 +589,22 @@ function Dashboard({ onLogout, userEmail, userName }) {
           <div className="responses-modal">
             <div className="responses-header">
               <h2>{selectedFormResponses.title} - Responses</h2>
+              <div className="responses-search-wrapper">
+                <FaSearch className="responses-search-icon" />
+                <input
+                  type="text"
+                  placeholder="Search by name or email..."
+                  value={responsesSearchTerm}
+                  onChange={(e) => setResponsesSearchTerm(e.target.value)}
+                  className="responses-search-input"
+                />
+              </div>
               <button
                 className="close-responses-btn"
                 onClick={() => {
                   setIsResponsesOpen(false);
                   setSelectedFormResponses(null);
+                  setResponsesSearchTerm("");
                 }}
               >
                 ✕
@@ -581,8 +622,8 @@ function Dashboard({ onLogout, userEmail, userName }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedFormResponses.responses && selectedFormResponses.responses.length > 0 ? (
-                    selectedFormResponses.responses.map((response, index) => {
+                  {filteredResponses && filteredResponses.length > 0 ? (
+                    filteredResponses.map((response, index) => {
                       const responsesStr = JSON.stringify(response.responses || {});
                       return (
                         <tr key={index}>
@@ -640,6 +681,13 @@ function Dashboard({ onLogout, userEmail, userName }) {
               </div>
 
               <div className="profile-main">
+                {/* NOTIFICATION */}
+                {profileNotification.message && (
+                  <div className={`profile-notification ${profileNotification.type}`}>
+                    {profileNotification.message}
+                  </div>
+                )}
+
                 {!isProfileEditMode ? (
                   // VIEW MODE
                   <>
@@ -690,7 +738,10 @@ function Dashboard({ onLogout, userEmail, userName }) {
                           type="text"
                           className="profile-input"
                           value={tempAdminName}
-                          onChange={(e) => setTempAdminName(e.target.value)}
+                          onChange={(e) => {
+                            setTempAdminName(e.target.value);
+                            if (profileNotification.message) setProfileNotification({ type: "", message: "" });
+                          }}
                           placeholder="Enter your name"
                         />
                       </div>
@@ -701,7 +752,10 @@ function Dashboard({ onLogout, userEmail, userName }) {
                           type="email"
                           className="profile-input"
                           value={tempAdminEmail}
-                          onChange={(e) => setTempAdminEmail(e.target.value)}
+                          onChange={(e) => {
+                            setTempAdminEmail(e.target.value);
+                            if (profileNotification.message) setProfileNotification({ type: "", message: "" });
+                          }}
                           placeholder="Enter your email"
                         />
                       </div>
