@@ -5,6 +5,8 @@ import CreateAccountModal from "./CreateAccountModal";
 import logo from "../assets/eFormX.png";
 import authService from "../services/authService";
 import userService from "../services/userService";
+import { FaSearch } from "react-icons/fa";
+
 
 function SuperAdminDashboard({ onLogout }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -19,6 +21,8 @@ function SuperAdminDashboard({ onLogout }) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [profileMessage, setProfileMessage] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+
 
   // Load accounts from backend on mount
   useEffect(() => {
@@ -133,6 +137,18 @@ function SuperAdminDashboard({ onLogout }) {
     }
   };
 
+  const filteredAccounts = accounts.filter((acc) => {
+  const term = searchTerm.toLowerCase();
+
+  return (
+    acc.name?.toLowerCase().includes(term) ||
+    acc.email?.toLowerCase().includes(term) ||
+    acc.role?.toLowerCase().includes(term) ||
+    acc.status?.toLowerCase().includes(term)
+  );
+});
+
+
 
   return (
     <div className="superadmin">
@@ -167,6 +183,19 @@ function SuperAdminDashboard({ onLogout }) {
       {/* TITLE */}
       <div className="page-title">
         <h2>Account Management</h2>
+          <div className="page-actions">
+            <div className="search-wrapper">
+              <FaSearch className="search-icon" />
+              <input
+                type="text"
+                placeholder="Search accounts..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="search-input"
+              />
+            </div>
+          </div>
+
         <button
           className="create-account-btn"
           onClick={() => {
@@ -213,7 +242,7 @@ function SuperAdminDashboard({ onLogout }) {
                 </td>
               </tr>
             ) : (
-              accounts && Array.isArray(accounts) && accounts.map((acc, index) => (
+              filteredAccounts.map((acc, index) => (
                 <tr key={acc.id || index}>
                   <td>{acc.name}</td>
                   <td>{acc.email}</td>
