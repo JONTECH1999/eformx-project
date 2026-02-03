@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\SuperAdmin;
 use App\Mail\AccountCreatedMail;
+use App\Mail\AccountDeletedMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -133,7 +134,22 @@ class UserController extends Controller
         }
 
         $user = User::findOrFail($id);
+
+        // Capture details before deletion
+        $name = $user->name;
+        $email = $user->email;
+
         $user->delete();
+
+        // Notify user about deletion (best-effort)
+        try {
+            Mail::to($email)->send(new AccountDeletedMail($name, $email));
+        } catch (\Throwable $e) {
+            Log::error('Failed to send AccountDeletedMail', [
+                'email' => $email,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return response()->json(['message' => 'User deleted successfully'], 200);
     }
