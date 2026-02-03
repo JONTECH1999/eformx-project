@@ -74,6 +74,18 @@ const authService = {
         const res = await api.post('/password/reset', payload);
         return res.data;
     },
+
+    /**
+     * Update authenticated user's profile
+     * @param {object} payload { name?, email?, password? }
+     */
+    async updateProfile(payload) {
+        const res = await api.put('/profile', payload);
+        const updated = res.data;
+        // Persist updated user in storage
+        localStorage.setItem('user', JSON.stringify(updated));
+        return updated;
+    },
 };
 
 export default authService;

@@ -18,7 +18,7 @@ import {
   FaCamera,
 } from "react-icons/fa";
 
-function Dashboard({ onLogout, userEmail }) {
+function Dashboard({ onLogout, userEmail, userName }) {
   const defaultAdminAvatar =
     "https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=200";
 
@@ -44,10 +44,10 @@ function Dashboard({ onLogout, userEmail }) {
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isProfileEditMode, setIsProfileEditMode] = useState(false);
-  const [adminName, setAdminName] = useState("Admin");
+  const [adminName, setAdminName] = useState(userName || "Admin");
   const [adminEmail, setAdminEmail] = useState(userEmail || "admin@eformx.com");
   const [adminAvatar, setAdminAvatar] = useState(defaultAdminAvatar);
-  const [tempAdminName, setTempAdminName] = useState("Admin");
+  const [tempAdminName, setTempAdminName] = useState(userName || "Admin");
   const [tempAdminEmail, setTempAdminEmail] = useState(userEmail || "admin@eformx.com");
   const [tempAdminAvatar, setTempAdminAvatar] = useState(defaultAdminAvatar);
 
@@ -248,10 +248,32 @@ function Dashboard({ onLogout, userEmail }) {
       return;
     }
 
-    setAdminName(trimmedName);
-    setAdminEmail(trimmedEmail);
-    setAdminAvatar(tempAdminAvatar || defaultAdminAvatar);
-    setIsProfileEditMode(false);
+    (async () => {
+      try {
+        // Persist changes to backend
+        const updated = await (await import('../services/authService')).default.updateProfile({
+          name: trimmedName,
+          email: trimmedEmail,
+        });
+
+        // Update local UI state
+        setAdminName(updated.name || trimmedName);
+        setAdminEmail(updated.email || trimmedEmail);
+        setAdminAvatar(tempAdminAvatar || defaultAdminAvatar);
+        setIsProfileEditMode(false);
+
+        // Optional: Refresh stored user in memory for current session
+        try {
+          const storedStr = localStorage.getItem('user');
+          const stored = storedStr ? JSON.parse(storedStr) : {};
+          const next = { ...stored, name: updated.name, email: updated.email };
+          localStorage.setItem('user', JSON.stringify(next));
+        } catch {}
+      } catch (err) {
+        console.error('Failed to save profile:', err);
+        alert('Failed to save profile. Please try again.');
+      }
+    })();
   };
 
   const handleCancelEditProfile = () => {
