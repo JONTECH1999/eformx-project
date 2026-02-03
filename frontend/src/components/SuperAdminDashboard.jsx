@@ -81,8 +81,8 @@ function SuperAdminDashboard({ onLogout }) {
     }
   };
 
-  const openEditModal = (index) => {
-    setAccountToEdit({ ...accounts[index], index });
+  const openEditModal = (account) => {
+    setAccountToEdit(account);
     setIsModalOpen(true);
   };
 
@@ -91,11 +91,9 @@ function SuperAdminDashboard({ onLogout }) {
     try {
       const id = accountToEdit.id;
       const updated = await userService.updateUser(id, updatedAccount);
-      setAccounts((prev) => {
-        const copy = [...prev];
-        copy[accountToEdit.index] = updated;
-        return copy;
-      });
+      setAccounts((prev) => 
+        prev.map(acc => acc.id === id ? updated : acc)
+      );
       setAccountToEdit(null);
       setIsModalOpen(false);
       setError("");
@@ -107,19 +105,18 @@ function SuperAdminDashboard({ onLogout }) {
     }
   };
 
-  const openDeleteModal = (index) => {
-    setAccountToDelete(index);
+  const openDeleteModal = (account) => {
+    setAccountToDelete(account);
     setIsDeleteModalOpen(true);
   };
 
   const confirmDelete = async () => {
     try {
-      const target = accounts[accountToDelete];
+      const target = accountToDelete;
       if (target?.id) {
         await userService.deleteUser(target.id);
+        setAccounts((prev) => prev.filter(acc => acc.id !== target.id));
       }
-      const updated = accounts.filter((_, i) => i !== accountToDelete);
-      setAccounts(updated);
       setIsDeleteModalOpen(false);
       setAccountToDelete(null);
       setError("");
@@ -257,13 +254,13 @@ function SuperAdminDashboard({ onLogout }) {
                   <td style={{ display: "flex", gap: "8px" }}>
                     <button
                       className="edit-btn"
-                      onClick={() => openEditModal(index)}
+                      onClick={() => openEditModal(acc)}
                     >
                       <FaEdit />
                     </button>
                     <button
                       className="delete-btn"
-                      onClick={() => openDeleteModal(index)}
+                      onClick={() => openDeleteModal(acc)}
                     >
                       <FaTrash />
                     </button>
