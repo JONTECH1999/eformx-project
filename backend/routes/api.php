@@ -14,6 +14,8 @@ Route::post('/forms/{formId}/responses', [FormResponseController::class, 'store'
 // Protected routes (require authentication)
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
+    // Update own profile (SuperAdmin or User)
+    Route::put('/profile', [AuthController::class, 'updateProfile']);
 
     // Form CRUD
     Route::apiResource('forms', FormController::class);

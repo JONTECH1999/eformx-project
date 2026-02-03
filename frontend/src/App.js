@@ -63,7 +63,7 @@ function App() {
               user.role === "Super Admin" ? (
                 <SuperAdminDashboard superAdminProfile={user} onLogout={handleLogout} />
               ) : (
-                <Dashboard userEmail={user.email} onLogout={handleLogout} />
+                <Dashboard userEmail={user.email} userName={user.name} onLogout={handleLogout} />
               )
             )
           }

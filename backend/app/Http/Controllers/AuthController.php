@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class AuthController extends Controller
 {
@@ -146,5 +147,58 @@ class AuthController extends Controller
         $user->tokens()->delete();
 
         return response()->json(['message' => 'Password reset successful']);
+    }
+
+    /**
+     * Update the authenticated user's profile (name/email/password).
+     * Works for both SuperAdmin and regular User.
+     */
+    public function updateProfile(Request $request)
+    {
+        $authUser = $request->user();
+
+        if (!$authUser) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        // Determine validation rules based on model/table
+        if ($authUser instanceof SuperAdmin) {
+            $rules = [
+                'name' => 'sometimes|required|string|max:255',
+                'email' => ['sometimes','required','email:rfc,dns', Rule::unique('super_admins')->ignore($authUser->id)],
+                'password' => 'sometimes|nullable|string|min:6',
+            ];
+        } else { // regular User
+            $rules = [
+                'name' => 'sometimes|required|string|max:255',
+                'email' => ['sometimes','required','email:rfc,dns', Rule::unique('users')->ignore($authUser->id)],
+                'password' => 'sometimes|nullable|string|min:6',
+            ];
+        }
+
+        $validated = $request->validate($rules);
+
+        // Apply updates
+        if (array_key_exists('name', $validated)) {
+            $authUser->name = $validated['name'];
+        }
+        if (array_key_exists('email', $validated)) {
+            $authUser->email = $validated['email'];
+        }
+        if (array_key_exists('password', $validated) && !empty($validated['password'])) {
+            $authUser->password = Hash::make($validated['password']);
+        }
+
+        $authUser->save();
+
+        // Normalize response similar to login payload
+        $payload = [
+            'id' => $authUser->id,
+            'name' => $authUser->name,
+            'email' => $authUser->email,
+            'role' => $authUser instanceof SuperAdmin ? 'Super Admin' : 'User',
+        ];
+
+        return response()->json($payload);
     }
 }
