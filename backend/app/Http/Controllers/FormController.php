@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Form;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -13,6 +14,7 @@ class FormController extends Controller
      */
     public function index()
     {
+        /** @var User $user */
         $user = Auth::user();
         $forms = $user->forms()->with('responses')->latest()->get();
 
@@ -32,7 +34,9 @@ class FormController extends Controller
             'status' => 'nullable|in:draft,active,closed',
         ]);
 
-        $form = Auth::user()->forms()->create($validated);
+        /** @var User $user */
+        $user = Auth::user();
+        $form = $user->forms()->create($validated);
         $form->load('responses'); // Eager load responses for consistency
 
         return response()->json($form, 201);
@@ -43,7 +47,9 @@ class FormController extends Controller
      */
     public function show($id)
     {
-        $form = Auth::user()->forms()->with('responses')->findOrFail($id);
+        /** @var User $user */
+        $user = Auth::user();
+        $form = $user->forms()->with('responses')->findOrFail($id);
 
         return response()->json($form);
     }
@@ -75,7 +81,9 @@ class FormController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $form = Auth::user()->forms()->findOrFail($id);
+        /** @var User $user */
+        $user = Auth::user();
+        $form = $user->forms()->findOrFail($id);
 
         $validated = $request->validate([
             'title' => 'sometimes|required|string|max:255',
@@ -95,7 +103,9 @@ class FormController extends Controller
      */
     public function destroy($id)
     {
-        $form = Auth::user()->forms()->findOrFail($id);
+        /** @var User $user */
+        $user = Auth::user();
+        $form = $user->forms()->findOrFail($id);
         $form->delete();
 
         return response()->json(['message' => 'Form deleted successfully'], 200);
@@ -106,7 +116,9 @@ class FormController extends Controller
      */
     public function analytics($id)
     {
-        $form = Auth::user()->forms()->findOrFail($id);
+        /** @var User $user */
+        $user = Auth::user();
+        $form = $user->forms()->findOrFail($id);
 
         return response()->json([
             'form_id' => $form->id,
