@@ -26,7 +26,12 @@ const PublicFormPage = () => {
                 };
                 if (data.fields && Array.isArray(data.fields)) {
                     data.fields.forEach(field => {
-                        initialData[field.id || field.label] = '';
+                        const key = field.id || field.label;
+                        if (field.type === 'multiple-choice' && field.choiceType === 'checkbox') {
+                            initialData[key] = [];
+                        } else {
+                            initialData[key] = '';
+                        }
                     });
                 }
                 setFormData(initialData);
@@ -143,38 +148,96 @@ const PublicFormPage = () => {
 
                     <div className="form-section">
                         <h3>Questions</h3>
-                        {form.fields && form.fields.map((field, index) => (
-                            <div key={index} className="form-group">
-                                <label>{field.label} {field.required ? '*' : ''}</label>
-                                {field.type === 'textarea' ? (
-                                    <textarea
-                                        required={field.required}
-                                        value={formData[field.id || field.label]}
-                                        onChange={(e) => handleInputChange(field.id || field.label, e.target.value)}
-                                        placeholder={`Enter ${field.label.toLowerCase()}`}
-                                    />
-                                ) : field.type === 'select' ? (
-                                    <select
-                                        required={field.required}
-                                        value={formData[field.id || field.label]}
-                                        onChange={(e) => handleInputChange(field.id || field.label, e.target.value)}
-                                    >
-                                        <option value="">Select an option</option>
-                                        {field.options && field.options.map((opt, i) => (
-                                            <option key={i} value={opt}>{opt}</option>
-                                        ))}
-                                    </select>
-                                ) : (
-                                    <input
-                                        type={field.type || 'text'}
-                                        required={field.required}
-                                        value={formData[field.id || field.label]}
-                                        onChange={(e) => handleInputChange(field.id || field.label, e.target.value)}
-                                        placeholder={`Enter ${field.label.toLowerCase()}`}
-                                    />
-                                )}
-                            </div>
-                        ))}
+                        {form.fields && form.fields.map((field, index) => {
+                            const key = field.id || field.label;
+                            const labelReq = field.required ? '*' : '';
+                            if (field.type === 'multiple-choice') {
+                                const options = Array.isArray(field.options) ? field.options : [];
+                                if (field.choiceType === 'radio') {
+                                    const current = formData[key] ?? '';
+                                    return (
+                                        <div key={index} className="form-group">
+                                            <label>{field.label} {labelReq}</label>
+                                            <div className="options-group">
+                                                {options.map((opt, i) => (
+                                                    <label key={i} className="option-item">
+                                                        <input
+                                                            type="radio"
+                                                            name={String(key)}
+                                                            value={opt}
+                                                            checked={current === opt}
+                                                            onChange={() => handleInputChange(key, opt)}
+                                                            required={field.required}
+                                                        />
+                                                        <span>{opt}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                }
+                                // Default or 'checkbox' multi-select
+                                const currentArr = Array.isArray(formData[key]) ? formData[key] : [];
+                                const toggleCheckbox = (opt) => {
+                                    const exists = currentArr.includes(opt);
+                                    const next = exists ? currentArr.filter(v => v !== opt) : [...currentArr, opt];
+                                    handleInputChange(key, next);
+                                };
+                                return (
+                                    <div key={index} className="form-group">
+                                        <label>{field.label} {labelReq}</label>
+                                        <div className="options-group">
+                                            {options.map((opt, i) => (
+                                                <label key={i} className="option-item">
+                                                    <input
+                                                        type="checkbox"
+                                                        name={String(key)}
+                                                        value={opt}
+                                                        checked={currentArr.includes(opt)}
+                                                        onChange={() => toggleCheckbox(opt)}
+                                                    />
+                                                    <span>{opt}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            }
+
+                            // Non-multiple-choice inputs
+                            return (
+                                <div key={index} className="form-group">
+                                    <label>{field.label} {labelReq}</label>
+                                    {field.type === 'textarea' ? (
+                                        <textarea
+                                            required={field.required}
+                                            value={formData[key]}
+                                            onChange={(e) => handleInputChange(key, e.target.value)}
+                                            placeholder={`Enter ${field.label.toLowerCase()}`}
+                                        />
+                                    ) : field.type === 'select' ? (
+                                        <select
+                                            required={field.required}
+                                            value={formData[key]}
+                                            onChange={(e) => handleInputChange(key, e.target.value)}
+                                        >
+                                            <option value="">Select an option</option>
+                                            {field.options && field.options.map((opt, i) => (
+                                                <option key={i} value={opt}>{opt}</option>
+                                            ))}
+                                        </select>
+                                    ) : (
+                                        <input
+                                            type={field.type || 'text'}
+                                            required={field.required}
+                                            value={formData[key]}
+                                            onChange={(e) => handleInputChange(key, e.target.value)}
+                                            placeholder={`Enter ${field.label.toLowerCase()}`}
+                                        />
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
 
                     <button type="submit" className="submit-btn" disabled={submitting}>

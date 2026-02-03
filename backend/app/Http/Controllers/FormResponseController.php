@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Form;
 use App\Models\FormResponse;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -40,7 +41,9 @@ class FormResponseController extends Controller
      */
     public function index($formId)
     {
-        $form = Auth::user()->forms()->findOrFail($formId);
+        /** @var User $user */
+        $user = Auth::user();
+        $form = $user->forms()->findOrFail($formId);
         $responses = $form->responses()->latest()->get();
 
         return response()->json($responses);
