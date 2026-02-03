@@ -4,8 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\SuperAdmin;
+use App\Mail\AccountCreatedMail;
+use App\Mail\AccountDeletedMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class UserController extends Controller
@@ -43,8 +47,9 @@ class UserController extends Controller
             'status' => 'nullable|in:Active,Inactive',
         ]);
 
-        // Hash the password
-        $validated['password'] = Hash::make($validated['password']);
+        // Capture raw password for email, then hash for storage
+        $rawPassword = $validated['password'];
+        $validated['password'] = Hash::make($rawPassword);
 
         // Set default status if not provided
         if (!isset($validated['status'])) {
@@ -52,6 +57,21 @@ class UserController extends Controller
         }
 
         $user = User::create($validated);
+
+        // Send credentials email to admin/creator accounts
+        $role = $validated['role'] ?? null;
+        if ($role && in_array(strtolower($role), ['admin', 'creator'])) {
+            try {
+                Mail::to($user->email)->send(new AccountCreatedMail($user->name, $user->email, $rawPassword));
+            } catch (\Throwable $e) {
+                Log::error('Failed to send AccountCreatedMail', [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'error' => $e->getMessage(),
+                ]);
+                // Do not block user creation on mail failure
+            }
+        }
 
         return response()->json($user, 201);
     }
@@ -114,7 +134,22 @@ class UserController extends Controller
         }
 
         $user = User::findOrFail($id);
+
+        // Capture details before deletion
+        $name = $user->name;
+        $email = $user->email;
+
         $user->delete();
+
+        // Notify user about deletion (best-effort)
+        try {
+            Mail::to($email)->send(new AccountDeletedMail($name, $email));
+        } catch (\Throwable $e) {
+            Log::error('Failed to send AccountDeletedMail', [
+                'email' => $email,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return response()->json(['message' => 'User deleted successfully'], 200);
     }
