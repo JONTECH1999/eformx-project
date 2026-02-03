@@ -420,13 +420,15 @@ function Dashboard({ onLogout, userEmail, userName }) {
                         <FaEdit /> Edit
                       </button>
                       <button
-                        className="btn-link"
+                        className={`toggle-switch ${String(form.status||'active').toLowerCase() === 'active' ? 'active' : 'inactive'}`}
+                        title={String(form.status||'active').toLowerCase() === 'active' ? 'Click to deactivate' : 'Click to activate'}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleToggleFormStatus(form.id);
                         }}
+                        aria-label={String(form.status||'active').toLowerCase() === 'active' ? 'Deactivate form' : 'Activate form'}
                       >
-                        {String(form.status||'active').toLowerCase() === 'active' ? 'Deactivate' : 'Activate'}
+                        <span className="knob" />
                       </button>
                     </div>
                   </div>
