@@ -13,12 +13,18 @@ class AccountCreatedMail extends Mailable
 {
     use Queueable, SerializesModels;
 
+    public string $name;
+    public string $email;
+    public string $password;
+
     /**
      * Create a new message instance.
      */
-    public function __construct()
+    public function __construct(string $name, string $email, string $password)
     {
-        //
+        $this->name = $name;
+        $this->email = $email;
+        $this->password = $password;
     }
 
     /**
@@ -27,7 +33,7 @@ class AccountCreatedMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Account Created Mail',
+            subject: 'Your Admin Account Has Been Created',
         );
     }
 
@@ -37,7 +43,12 @@ class AccountCreatedMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'view.name',
+            view: 'emails.account_created',
+            with: [
+                'name' => $this->name,
+                'email' => $this->email,
+                'password' => $this->password,
+            ],
         );
     }
 
