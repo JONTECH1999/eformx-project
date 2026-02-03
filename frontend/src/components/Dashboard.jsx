@@ -121,6 +121,21 @@ function Dashboard({ onLogout, userEmail, userName }) {
     setIsModalOpen(true);
   };
 
+  // ===== TOGGLE STATUS (Activate/Deactivate) =====
+  const handleToggleFormStatus = async (formId) => {
+    try {
+      const target = forms.find((f) => f.id === formId);
+      if (!target) return;
+      const current = (target.status || 'active').toLowerCase();
+      const nextStatus = current === 'active' ? 'closed' : 'active';
+      const updated = await formService.updateForm(formId, { status: nextStatus });
+      setForms(forms.map((f) => (f.id === updated.id ? updated : f)));
+    } catch (err) {
+      console.error('Failed to toggle form status:', err);
+      alert('Could not update form status. Please try again.');
+    }
+  };
+
   // ===== SHARE =====
   const handleShareForm = (formId) => {
     const link = `${window.location.origin}/form/${formId}`;
@@ -362,6 +377,9 @@ function Dashboard({ onLogout, userEmail, userName }) {
                   >
                     <div className="form-card-header">
                       <h2>{form.title || "Untitled Form"}</h2>
+                      <span className={`status-badge ${String(form.status||'active').toLowerCase()}`}> 
+                        {String(form.status || 'active').toUpperCase()}
+                      </span>
                       <div className="card-actions">
                         <FaChartBar
                           className="action-icon"
@@ -400,6 +418,15 @@ function Dashboard({ onLogout, userEmail, userName }) {
                         }}
                       >
                         <FaEdit /> Edit
+                      </button>
+                      <button
+                        className="btn-link"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleFormStatus(form.id);
+                        }}
+                      >
+                        {String(form.status||'active').toLowerCase() === 'active' ? 'Deactivate' : 'Activate'}
                       </button>
                     </div>
                   </div>
