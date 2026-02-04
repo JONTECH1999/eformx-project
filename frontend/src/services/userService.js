@@ -99,7 +99,12 @@ const userService = {
      * @param {number} id User ID
      * @returns {Promise<Object>} Success message
      */
-    async deleteUser(id) {
+    async deleteUser(id, currentRole) {
+        const originalRole = (currentRole || '').toLowerCase();
+        if (originalRole === 'super admin') {
+            const response = await api.delete(`/super-admins/${id}`);
+            return response.data;
+        }
         const response = await api.delete(`/users/${id}`);
         return response.data;
     },

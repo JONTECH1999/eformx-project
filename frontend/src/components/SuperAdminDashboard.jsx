@@ -6,6 +6,7 @@ import logo from "../assets/eFormX.png";
 import authService from "../services/authService";
 import userService from "../services/userService";
 import { FaSearch } from "react-icons/fa";
+import notificationsService from "../services/notificationsService";
 
 
 function SuperAdminDashboard({ onLogout }) {
@@ -22,6 +23,9 @@ function SuperAdminDashboard({ onLogout }) {
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [profileMessage, setProfileMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const unreadCount = notifications.filter(n => !n.is_read).length;
 
 
   // Load accounts from backend on mount
@@ -40,6 +44,44 @@ function SuperAdminDashboard({ onLogout }) {
       }
     };
     loadUsers();
+    // Load notifications for Super Admin
+    const loadNotifications = async () => {
+      try {
+        const items = await notificationsService.list();
+        setNotifications(items);
+      } catch (e) {
+        // ignore for now
+      }
+    };
+    loadNotifications();
+  }, []);
+
+  // Auto-refresh accounts periodically to stay in sync with backend
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const users = await userService.getUsers();
+        setAccounts(users);
+      } catch (e) {
+        // ignore transient errors
+      }
+    }, 3000); // every 3 seconds to match notifications cadence
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Auto-refresh notifications in the background (no page restart needed)
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const items = await notificationsService.list();
+        setNotifications(items);
+      } catch (e) {
+        // ignore transient errors
+      }
+    }, 3000); // every 3 seconds for snappier updates
+
+    return () => clearInterval(interval);
   }, []);
 
   // ✅ Persistent Super Admin Profile
@@ -97,6 +139,16 @@ function SuperAdminDashboard({ onLogout }) {
       const created = await userService.createUser(account);
       setAccounts((prev) => [...prev, created]);
       setError("");
+      // Refresh notifications immediately so the bell reflects the action
+      try {
+        const items = await notificationsService.list();
+        setNotifications(items);
+      } catch (_) {}
+      // Also refresh accounts from backend to confirm state
+      try {
+        const users = await userService.getUsers();
+        setAccounts(users);
+      } catch (_) {}
     } catch (e) {
       console.error("Create user failed:", e);
       const message = e?.response?.data?.message || "Failed to create account.";
@@ -138,8 +190,18 @@ function SuperAdminDashboard({ onLogout }) {
     try {
       const target = accountToDelete;
       if (target?.id) {
-        await userService.deleteUser(target.id);
+        await userService.deleteUser(target.id, target.role);
         setAccounts((prev) => prev.filter(acc => acc.id !== target.id));
+        // Refresh notifications immediately so the bell reflects the action
+        try {
+          const items = await notificationsService.list();
+          setNotifications(items);
+        } catch (_) {}
+        // Also refresh accounts from backend to confirm state
+        try {
+          const users = await userService.getUsers();
+          setAccounts(users);
+        } catch (_) {}
       }
       setIsDeleteModalOpen(false);
       setAccountToDelete(null);
@@ -182,7 +244,72 @@ function SuperAdminDashboard({ onLogout }) {
         </div>
 
         <div className="sa-right">
-          <FaBell className="icon" />
+          <div style={{ position: "relative" }}>
+            <FaBell className="icon" onClick={() => setShowNotifications(v => !v)} style={{ cursor: "pointer" }} />
+            {unreadCount > 0 && (
+              <span style={{
+                position: "absolute",
+                top: -6,
+                right: -6,
+                background: "#ef4444",
+                color: "#fff",
+                borderRadius: "9999px",
+                fontSize: 12,
+                padding: "2px 6px"
+              }}>{unreadCount}</span>
+            )}
+            {showNotifications && (
+              <div style={{
+                position: "absolute",
+                right: 0,
+                top: 28,
+                width: 280,
+                background: "#fff",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+                borderRadius: 8,
+                overflow: "hidden",
+                zIndex: 10
+              }}>
+                <div style={{ padding: 8, borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontWeight: 600 }}>Notifications</span>
+                  <button
+                    onClick={async () => {
+                      try { await notificationsService.markAllRead(); const items = await notificationsService.list(); setNotifications(items);} catch {}
+                    }}
+                    style={{ background: "transparent", border: "none", color: "#2563eb", cursor: "pointer" }}
+                  >Mark all read</button>
+                  <button
+                    onClick={async () => { try { await notificationsService.deleteAll(); const items = await notificationsService.list(); setNotifications(items);} catch {} }}
+                    style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", marginLeft: 8 }}
+                  >Delete all</button>
+                </div>
+                <div style={{ maxHeight: 260, overflowY: "auto" }}>
+                  {notifications.length === 0 ? (
+                    <div style={{ padding: 12, color: "#6b7280" }}>No notifications</div>
+                  ) : notifications.map(n => (
+                    <div key={n.id} style={{ padding: 12, borderBottom: "1px solid #f3f4f6", background: n.is_read ? "#fff" : "#f9fafb" }}>
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>{n.title}</div>
+                      <div style={{ fontSize: 12, color: "#374151", marginTop: 4 }}>{n.message}</div>
+                      {!n.is_read && (
+                        <button
+                          onClick={async () => { try { await notificationsService.markRead(n.id); const items = await notificationsService.list(); setNotifications(items);} catch {} }}
+                          style={{ marginTop: 6, background: "transparent", border: "none", color: "#2563eb", cursor: "pointer", fontSize: 12 }}
+                        >Mark read</button>
+                      )}
+                      <button
+                        onClick={async () => { try { await notificationsService.delete(n.id); const items = await notificationsService.list(); setNotifications(items);} catch {} }}
+                        style={{ marginTop: 6, background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 14, marginLeft: 12, display: "inline-flex", alignItems: "center" }}
+                        aria-label="Delete notification"
+                        title="Delete notification"
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
           <div
             className="profile"
             onClick={() => setIsProfileOpen(true)}
@@ -266,7 +393,7 @@ function SuperAdminDashboard({ onLogout }) {
               </tr>
             ) : (
               filteredAccounts.map((acc, index) => (
-                <tr key={acc.id || index}>
+                <tr key={`${acc.email || ''}-${acc.role || ''}-${acc.id ?? index}`}>
                   <td>{acc.name}</td>
                   <td>{acc.email}</td>
                   <td>{acc.role}</td>
