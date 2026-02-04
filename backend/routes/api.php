@@ -6,6 +6,7 @@ use App\Http\Controllers\FormController;
 use App\Http\Controllers\FormResponseController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\SuperAdminController;
+use App\Http\Controllers\NotificationController;
 
 // Public routes
 Route::post('/login', [AuthController::class, 'login']);
@@ -29,6 +30,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // User management (for SuperAdmin)
     Route::apiResource('users', UserController::class);
-    // SuperAdmin management (list/create/update)
-    Route::apiResource('super-admins', SuperAdminController::class)->only(['index','store','update']);
+    // SuperAdmin management (list/create/update/delete)
+    Route::apiResource('super-admins', SuperAdminController::class)->only(['index','store','update','destroy']);
+
+    // Notifications for SuperAdmin
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead']);
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead']);
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
+    Route::delete('/notifications', [NotificationController::class, 'destroyAll']);
 });

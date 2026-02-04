@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use App\Models\Notification;
 
 class UserController extends Controller
 {
@@ -58,11 +59,30 @@ class UserController extends Controller
 
         $user = User::create($validated);
 
+        // Notify success to the acting SuperAdmin (role-aware)
+        $createdRole = $user->role ?: 'User';
+        $createdRoleLabel = (strtolower($createdRole) === 'super admin')
+            ? 'Super Admin'
+            : ucwords(strtolower($createdRole));
+
+        Notification::create([
+            'title' => $createdRoleLabel . ' Account Created',
+            'message' => $createdRoleLabel . ' account created: ' . $user->email,
+            'type' => 'success',
+            'recipient_admin_id' => $request->user()->id,
+        ]);
+
         // Prevent duplicate emails across super_admins and users was enforced earlier,
         // but double-check: if a SuperAdmin exists with same email rollback and error.
         if (SuperAdmin::where('email', $user->email)->exists()) {
             // delete created user to avoid duplicates
             $user->delete();
+            Notification::create([
+                'title' => 'Account Creation Failed',
+                'message' => 'Email already registered as a Super Admin: ' . $validated['email'],
+                'type' => 'error',
+                'recipient_admin_id' => $request->user()->id,
+            ]);
             return response()->json(['message' => 'Email already registered as a Super Admin'], 422);
         }
 
@@ -78,6 +98,12 @@ class UserController extends Controller
                     'error' => $e->getMessage(),
                 ]);
                 // Do not block user creation on mail failure
+                Notification::create([
+                    'title' => 'Mail Delivery Warning',
+                    'message' => 'Failed to send credentials email to: ' . $user->email,
+                    'type' => 'warning',
+                    'recipient_admin_id' => $request->user()->id,
+                ]);
             }
         }
 
@@ -132,6 +158,12 @@ class UserController extends Controller
 
         // Prevent updating email to one that belongs to a SuperAdmin
         if (array_key_exists('email', $validated) && SuperAdmin::where('email', $validated['email'])->exists()) {
+            Notification::create([
+                'title' => 'Update Failed',
+                'message' => 'Email belongs to a Super Admin: ' . $validated['email'],
+                'type' => 'error',
+                'recipient_admin_id' => $request->user()->id,
+            ]);
             return response()->json(['message' => 'Email already registered as a Super Admin'], 422);
         }
 
@@ -244,6 +276,8 @@ class UserController extends Controller
         // Capture details before deletion
         $name = $user->name;
         $email = $user->email;
+        $role = $user->role ?: 'User';
+        $roleLabel = (strtolower($role) === 'super admin') ? 'Super Admin' : ucwords(strtolower($role));
 
         $user->delete();
 
@@ -255,7 +289,22 @@ class UserController extends Controller
                 'email' => $email,
                 'error' => $e->getMessage(),
             ]);
+            // Emit a warning notification if mail fails
+            Notification::create([
+                'title' => 'Mail Delivery Warning',
+                'message' => 'Failed to send account deletion email to: ' . $email,
+                'type' => 'warning',
+                'recipient_admin_id' => $request->user()->id,
+            ]);
         }
+
+        // Emit a success notification for the acting Super Admin (role-aware)
+        Notification::create([
+            'title' => $roleLabel . ' Account Deleted',
+            'message' => $roleLabel . ' account deleted: ' . $email,
+            'type' => 'success',
+            'recipient_admin_id' => $request->user()->id,
+        ]);
 
         return response()->json(['message' => 'User deleted successfully'], 200);
     }

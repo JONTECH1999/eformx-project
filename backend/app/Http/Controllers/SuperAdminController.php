@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\SuperAdmin;
 use App\Models\User;
 use App\Mail\AccountCreatedMail;
+use App\Mail\AccountDeletedMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use App\Models\Notification;
 
 class SuperAdminController extends Controller
 {
@@ -69,9 +71,22 @@ class SuperAdminController extends Controller
                 'email' => $admin->email,
                 'error' => $e->getMessage(),
             ]);
+            Notification::create([
+                'title' => 'Mail Delivery Warning',
+                'message' => 'Failed to send credentials email to Super Admin: ' . $admin->email,
+                'type' => 'warning',
+                'recipient_admin_id' => $request->user()->id,
+            ]);
         }
 
         // Return a payload consistent with frontend expectations
+        Notification::create([
+            'title' => 'Super Admin Account Created',
+            'message' => 'Super Admin account created: ' . $admin->email,
+            'type' => 'success',
+            'recipient_admin_id' => $request->user()->id,
+        ]);
+
         return response()->json([
             'id' => $admin->id,
             'name' => $admin->name,
@@ -144,5 +159,49 @@ class SuperAdminController extends Controller
             'role' => 'Super Admin',
             'status' => 'Active',
         ]);
+    }
+
+    /**
+     * Remove a SuperAdmin.
+     */
+    public function destroy(Request $request, $id)
+    {
+        // Only SuperAdmin can delete super admins
+        if (!($request->user() instanceof SuperAdmin)) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $admin = SuperAdmin::findOrFail($id);
+
+        $name = $admin->name;
+        $email = $admin->email;
+
+        $admin->delete();
+
+        // Attempt to notify the deleted admin via email
+        try {
+            Mail::to($email)->send(new AccountDeletedMail($name, $email));
+        } catch (\Throwable $e) {
+            Log::error('Failed to send SuperAdmin AccountDeletedMail', [
+                'email' => $email,
+                'error' => $e->getMessage(),
+            ]);
+            Notification::create([
+                'title' => 'Mail Delivery Warning',
+                'message' => 'Failed to send account deletion email to Super Admin: ' . $email,
+                'type' => 'warning',
+                'recipient_admin_id' => $request->user()->id,
+            ]);
+        }
+
+        // Emit success notification for the acting Super Admin
+        Notification::create([
+            'title' => 'Super Admin Account Deleted',
+            'message' => 'Super Admin account deleted: ' . $email,
+            'type' => 'success',
+            'recipient_admin_id' => $request->user()->id,
+        ]);
+
+        return response()->json(['message' => 'Super Admin deleted successfully'], 200);
     }
 }
