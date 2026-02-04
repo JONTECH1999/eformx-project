@@ -17,6 +17,8 @@ import {
   FaTimes,
   FaCamera,
   FaSearch,
+  FaEye,
+  FaEyeSlash,
 } from "react-icons/fa";
 
 function Dashboard({ onLogout, userEmail, userName }) {
@@ -53,6 +55,29 @@ function Dashboard({ onLogout, userEmail, userName }) {
   const [tempAdminEmail, setTempAdminEmail] = useState(userEmail || "admin@eformx.com");
   const [tempAdminAvatar, setTempAdminAvatar] = useState(defaultAdminAvatar);
   const [profileNotification, setProfileNotification] = useState({ type: "", message: "" });
+
+  // Change password
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false); // no longer used visually
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false); // no longer used visually
+  const [hideChangePasswordCta, setHideChangePasswordCta] = useState(false);
+
+  const resetChangePasswordFields = () => {
+    setNewPassword("");
+    setConfirmNewPassword("");
+    setShowNewPassword(false);
+    setShowConfirmNewPassword(false);
+  };
+
+  const openChangePassword = () => {
+    setHideChangePasswordCta(true);
+    setTimeout(() => setHideChangePasswordCta(false), 700);
+    setIsChangePasswordOpen(true);
+    resetChangePasswordFields();
+  };
 
   useEffect(() => {
     fetchForms();
@@ -242,6 +267,8 @@ function Dashboard({ onLogout, userEmail, userName }) {
   const handleOpenProfile = () => {
     setIsProfileOpen(true);
     setIsProfileEditMode(false);
+    setIsChangePasswordOpen(false);
+    resetChangePasswordFields();
     // Reset temp values to current values when opening
     setTempAdminName(adminName);
     setTempAdminEmail(adminEmail);
@@ -273,11 +300,37 @@ function Dashboard({ onLogout, userEmail, userName }) {
 
     (async () => {
       try {
-        // Persist changes to backend
-        const updated = await (await import('../services/authService')).default.updateProfile({
+        const authService = (await import("../services/authService")).default;
+
+        // If user entered a new password, validate it here (no separate save button)
+        const hasPasswordChange = !!newPassword || !!confirmNewPassword;
+        if (hasPasswordChange) {
+          if (!newPassword || newPassword.length < 6) {
+            setProfileNotification({ type: "error", message: "New password must be at least 6 characters" });
+            return;
+          }
+          if (newPassword !== confirmNewPassword) {
+            setProfileNotification({ type: "error", message: "New passwords do not match" });
+            return;
+          }
+        }
+
+        // Persist profile changes to backend
+        const updated = await authService.updateProfile({
           name: trimmedName,
           email: trimmedEmail,
         });
+
+        // If requested, persist password change
+        if (hasPasswordChange) {
+          setIsChangingPassword(true);
+          await authService.changePassword({
+            password: newPassword,
+            password_confirmation: confirmNewPassword,
+          });
+          resetChangePasswordFields();
+          setIsChangePasswordOpen(false);
+        }
 
         // Update local UI state
         setAdminName(updated.name || trimmedName);
@@ -286,7 +339,10 @@ function Dashboard({ onLogout, userEmail, userName }) {
         setIsProfileEditMode(false);
 
         // Show success notification
-        setProfileNotification({ type: "success", message: "Profile updated successfully!" });
+        setProfileNotification({
+          type: "success",
+          message: hasPasswordChange ? "Profile and password updated successfully!" : "Profile updated successfully!",
+        });
         
         // Auto-hide success message after 3 seconds
         setTimeout(() => {
@@ -302,8 +358,15 @@ function Dashboard({ onLogout, userEmail, userName }) {
         } catch {}
       } catch (err) {
         console.error('Failed to save profile:', err);
-        const errorMsg = err?.response?.data?.message || "Failed to save profile. Please try again.";
+        const errorMsg =
+          err?.response?.data?.message ||
+          (err?.response?.data?.errors
+            ? Object.values(err.response.data.errors).flat().join(" ")
+            : null) ||
+          "Failed to save profile. Please try again.";
         setProfileNotification({ type: "error", message: errorMsg });
+      } finally {
+        setIsChangingPassword(false);
       }
     })();
   };
@@ -314,9 +377,13 @@ function Dashboard({ onLogout, userEmail, userName }) {
     setTempAdminEmail(adminEmail);
     setTempAdminAvatar(adminAvatar);
     setIsProfileEditMode(false);
+    setIsChangePasswordOpen(false);
+    resetChangePasswordFields();
     // Clear notifications
     setProfileNotification({ type: "", message: "" });
   };
+
+  // Password is saved via "Save Changes" only.
 
   const handleLogout = () => {
     if (onLogout) {
@@ -758,6 +825,68 @@ function Dashboard({ onLogout, userEmail, userName }) {
                           }}
                           placeholder="Enter your email"
                         />
+                      </div>
+
+                      {/* CHANGE PASSWORD */}
+                      <div className="profile-form-group">
+                        <div className="profile-section-header">
+                          {!hideChangePasswordCta && !isChangePasswordOpen && (
+                            <button
+                              type="button"
+                              className="profile-link-btn"
+                              onClick={() => {
+                                openChangePassword();
+                                if (profileNotification.message) setProfileNotification({ type: "", message: "" });
+                              }}
+                            >
+                              Change Password
+                            </button>
+                          )}
+                        </div>
+
+                        {isChangePasswordOpen && (
+                          <div className="profile-password-panel">
+                            <div className="profile-form-group">
+                              <label>New password</label>
+                              <div className="profile-password-row">
+                                <input
+                                  type="password"
+                                  className="profile-input profile-password-input"
+                                  value={newPassword}
+                                  onChange={(e) => {
+                                    setNewPassword(e.target.value);
+                                    if (profileNotification.message) setProfileNotification({ type: "", message: "" });
+                                  }}
+                                  placeholder="Enter new password"
+                                  autoComplete="new-password"
+                                />
+                              </div>
+                              {newPassword.length > 0 && newPassword.length < 6 && (
+                                <div className="profile-field-error">Password must be at least 6 characters.</div>
+                              )}
+                            </div>
+
+                            <div className="profile-form-group">
+                              <label>Confirm new password</label>
+                              <div className="profile-password-row">
+                                <input
+                                  type="password"
+                                  className="profile-input profile-password-input"
+                                  value={confirmNewPassword}
+                                  onChange={(e) => {
+                                    setConfirmNewPassword(e.target.value);
+                                    if (profileNotification.message) setProfileNotification({ type: "", message: "" });
+                                  }}
+                                  placeholder="Confirm new password"
+                                  autoComplete="new-password"
+                                />
+                              </div>
+                              {confirmNewPassword.length > 0 && newPassword !== confirmNewPassword && (
+                                <div className="profile-field-error">Passwords do not match.</div>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       <div className="profile-edit-actions">

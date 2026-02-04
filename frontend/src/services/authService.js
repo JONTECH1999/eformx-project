@@ -86,6 +86,15 @@ const authService = {
         localStorage.setItem('user', JSON.stringify(updated));
         return updated;
     },
+
+    /**
+     * Change authenticated user's password
+     * @param {object} payload { current_password, password, password_confirmation }
+     */
+    async changePassword(payload) {
+        const res = await api.put('/profile/password', payload);
+        return res.data;
+    },
 };
 
 export default authService;

@@ -20,6 +20,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     // Update own profile (SuperAdmin or User)
     Route::put('/profile', [AuthController::class, 'updateProfile']);
+    // Change own password (requires current password)
+    Route::put('/profile/password', [AuthController::class, 'changePassword']);
 
     // Form CRUD
     Route::apiResource('forms', FormController::class);

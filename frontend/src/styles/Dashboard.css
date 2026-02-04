@@ -957,6 +957,9 @@ body {
 .profile-edit-form {
   width: 100%;
   max-width: 400px;
+  margin-top: 24px;
+  margin-left: auto;
+  margin-right: auto;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -1046,6 +1049,80 @@ body {
   display: flex;
   gap: 12px;
   margin-top: 8px;
+}
+
+/* Change Password section */
+.profile-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.profile-link-btn {
+  background: transparent;
+  border: none;
+  color: #0f4c5c;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 999px;
+  transition: background 0.2s ease, opacity 0.2s ease;
+}
+
+.profile-link-btn:hover {
+  background: rgba(15, 76, 92, 0.08);
+}
+
+.profile-password-panel {
+  margin-top: 16px;
+  padding: 0;
+  border-radius: 0;
+  border: none;
+  background: transparent;
+}
+
+.profile-password-input {
+  padding-right: 56px; /* space for eye icon */
+}
+
+.profile-input-with-icon {
+  position: relative;
+  width: 100%;
+}
+
+.profile-eye-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 38px;
+  width: 42px;
+  padding: 0;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #374151;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.profile-eye-btn svg {
+  font-size: 18px;
+}
+
+.profile-eye-btn:hover {
+  color: #0f4c5c;
+}
+
+.profile-field-error {
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #b91c1c;
 }
 
 .profile-cancel-btn,

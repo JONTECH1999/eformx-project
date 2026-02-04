@@ -221,4 +221,34 @@ class AuthController extends Controller
 
         return response()->json($payload);
     }
+
+    /**
+     * Change the authenticated user's password (requires current password).
+     * Works for both SuperAdmin and regular User.
+     */
+    public function changePassword(Request $request)
+    {
+        $authUser = $request->user();
+
+        if (!$authUser) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        $validated = $request->validate([
+            'password' => 'required|string|min:6|confirmed',
+        ]);
+
+        $authUser->password = Hash::make($validated['password']);
+        $authUser->save();
+
+        // Revoke other tokens but keep the current session token alive
+        $current = $request->user()->currentAccessToken();
+        if ($current) {
+            $authUser->tokens()->where('id', '!=', $current->id)->delete();
+        } else {
+            $authUser->tokens()->delete();
+        }
+
+        return response()->json(['message' => 'Password updated successfully']);
+    }
 }
