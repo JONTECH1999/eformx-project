@@ -90,7 +90,7 @@ function SuperAdminDashboard({ onLogout }) {
     if (!accountToEdit) return;
     try {
       const id = accountToEdit.id;
-      const updated = await userService.updateUser(id, updatedAccount);
+      const updated = await userService.updateUser(id, updatedAccount, accountToEdit.role);
       setAccounts((prev) => 
         prev.map(acc => acc.id === id ? updated : acc)
       );
