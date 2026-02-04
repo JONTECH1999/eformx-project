@@ -21,6 +21,38 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
 
 Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
+## Mail Setup (Gmail SMTP)
+
+To deliver emails (e.g., admin credentials) to Gmail, configure SMTP in your `.env`:
+
+```
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=your_gmail_address@gmail.com
+MAIL_PASSWORD=your_app_password
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=your_gmail_address@gmail.com
+MAIL_FROM_NAME="EFormX"
+```
+
+Notes:
+- Gmail requires 2FA and an App Password (not your normal password). Create one at Google Account → Security → App Passwords.
+- For production, consider providers like SendGrid or Mailgun for better deliverability.
+
+### Test locally
+1. Clear and rebuild config cache:
+	```bash
+	php artisan config:clear
+	php artisan config:cache
+	```
+2. Dispatch a test email to the log driver:
+	```bash
+	php scripts/test_mail.php
+	```
+	Check [storage/logs/laravel.log](storage/logs/laravel.log) for output.
+3. Switch to SMTP and create an admin via `POST /api/users` with `role: "admin"` or `"creator"`. Verify it arrives in Gmail.
+
 ## Learning Laravel
 
 Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.

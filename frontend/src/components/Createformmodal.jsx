@@ -12,18 +12,35 @@ function CreateFormModal({
   const [formTitle, setFormTitle] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [fields, setFields] = useState([]);
+  const [titleError, setTitleError] = useState("");
+  const [descriptionError, setDescriptionError] = useState("");
+  const [fieldsError, setFieldsError] = useState("");
 
   // ✅ PREFILL WHEN EDITING
   useEffect(() => {
     if (editMode && formData) {
       setFormTitle(formData.title || "");
       setFormDescription(formData.description || "");
-      setFields(formData.fields || []);
+
+      let fieldsData = formData.fields || [];
+      if (typeof fieldsData === 'string') {
+        try {
+          fieldsData = JSON.parse(fieldsData);
+        } catch (e) {
+          console.error("Failed to parse fields string:", fieldsData);
+          fieldsData = [];
+        }
+      }
+      setFields(Array.isArray(fieldsData) ? fieldsData : []);
     } else {
       setFormTitle("");
       setFormDescription("");
       setFields([]);
     }
+    // Clear errors when modal opens/closes
+    setTitleError("");
+    setDescriptionError("");
+    setFieldsError("");
   }, [editMode, formData, isOpen]);
 
   if (!isOpen) return null;
@@ -60,15 +77,16 @@ function CreateFormModal({
       fields.map((field) =>
         field.id === fieldId
           ? {
-              ...field,
-              options: [
-                ...field.options,
-                `Option ${field.options.length + 1}`,
-              ],
-            }
+            ...field,
+            options: [
+              ...field.options,
+              `Option ${field.options.length + 1}`,
+            ],
+          }
           : field
       )
     );
+    if (fieldsError) setFieldsError(""); // Clear error when user adds an option
   };
 
   const updateOption = (fieldId, optionIndex, value) => {
@@ -89,30 +107,48 @@ function CreateFormModal({
       fields.map((field) =>
         field.id === fieldId
           ? {
-              ...field,
-              options: field.options.filter((_, i) => i !== optionIndex),
-            }
+            ...field,
+            options: field.options.filter((_, i) => i !== optionIndex),
+          }
           : field
       )
     );
   };
 
   const handleSaveForm = () => {
-    if (!formTitle.trim()) return alert("Please enter a form title");
-    if (!formDescription.trim())
-      return alert("Please enter a form description");
-    if (fields.length === 0)
-      return alert("Please add at least one field to your form");
+    // Clear any previous errors
+    setTitleError("");
+    setDescriptionError("");
+    setFieldsError("");
 
-    if (fields.some((f) => !f.label.trim()))
-      return alert("Please add labels to all fields");
+    let hasError = false;
 
-    if (
-      fields.some(
-        (f) => f.type === "multiple-choice" && f.options.length < 2
-      )
-    )
-      return alert("Multiple choice fields must have at least 2 options");
+    if (!formTitle.trim()) {
+      setTitleError("Please enter a form title");
+      hasError = true;
+    }
+    if (!formDescription.trim()) {
+      setDescriptionError("Please enter a form description");
+      hasError = true;
+    }
+    if (fields.length === 0) {
+      setFieldsError("Please add at least one field to your form");
+      hasError = true;
+    } else {
+      if (fields.some((f) => !f.label.trim())) {
+        setFieldsError("Please add labels to all fields");
+        hasError = true;
+      } else if (
+        fields.some(
+          (f) => f.type === "multiple-choice" && f.options.length < 2
+        )
+      ) {
+        setFieldsError("Multiple choice fields must have at least 2 options");
+        hasError = true;
+      }
+    }
+
+    if (hasError) return;
 
     onCreateForm({
       title: formTitle,
@@ -150,20 +186,41 @@ function CreateFormModal({
               className="form-title-input"
               placeholder="Form Title"
               value={formTitle}
-              onChange={(e) => setFormTitle(e.target.value)}
+              onChange={(e) => {
+                setFormTitle(e.target.value);
+                if (titleError) setTitleError(""); // Clear error when user types
+              }}
             />
+            {titleError && (
+              <div className="field-error-message">
+                {titleError}
+              </div>
+            )}
             <textarea
               className="form-description-input"
               placeholder="Form Description"
               value={formDescription}
-              onChange={(e) => setFormDescription(e.target.value)}
+              onChange={(e) => {
+                setFormDescription(e.target.value);
+                if (descriptionError) setDescriptionError(""); // Clear error when user types
+              }}
               rows="3"
             />
+            {descriptionError && (
+              <div className="field-error-message">
+                {descriptionError}
+              </div>
+            )}
           </div>
 
           {/* FIELD BUTTONS */}
           <div className="form-fields-section">
             <label className="section-label">FORM FIELDS</label>
+            {fieldsError && (
+              <div className="field-error-message">
+                {fieldsError}
+              </div>
+            )}
             <div className="field-buttons">
               <button className="field-btn" onClick={() => addField("text")}>
                 <FaPlus /> Text Input
@@ -199,9 +256,10 @@ function CreateFormModal({
                   <input
                     type="text"
                     value={field.label}
-                    onChange={(e) =>
-                      updateField(field.id, "label", e.target.value)
-                    }
+                    onChange={(e) => {
+                      updateField(field.id, "label", e.target.value);
+                      if (fieldsError) setFieldsError(""); // Clear error when user types
+                    }}
                   />
                 </div>
 

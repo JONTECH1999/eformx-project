@@ -18,6 +18,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -30,10 +31,15 @@
   width: 90%;
   max-width: 600px;
   max-height: 90vh;
-  overflow-y: auto;
+  /* Keeps it within viewport */
+  display: flex;
+  /* Changed to flex for sticky header/footer support */
+  flex-direction: column;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   position: relative;
   animation: slideUp 0.3s ease-out;
+  overflow: hidden;
+  /* Prevent double scrollbars */
 }
 
 @keyframes slideUp {
@@ -41,6 +47,7 @@
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -56,16 +63,19 @@
   height: 38px;
   border-radius: 50%;
   border: none;
-  background-color: #ff4d4f;   /* strong red */
-  color: white;                /* makes the X white */
+  background-color: #ff4d4f;
+  /* strong red */
+  color: white;
+  /* makes the X white */
   font-size: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
   transition: all 0.2s ease;
-  z-index: 10;
+  z-index: 20;
+  /* Ensure above content */
 }
 
 .modal-close:hover {
@@ -76,6 +86,35 @@
 /* ==================== MODAL CONTENT ==================== */
 .modal-content {
   padding: 32px;
+  overflow-y: auto;
+  /* Internal scrolling */
+  flex: 1;
+  /* Take remaining space */
+}
+
+/* ==================== FIELD ERROR MESSAGE ==================== */
+.field-error-message {
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin-top: 8px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  border-left: 3px solid #dc2626;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ==================== FORM HEADER SECTION ==================== */
@@ -91,7 +130,7 @@
   width: 100%;
   background: #ffffff;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 16px 20px;
   font-size: 24px;
   font-weight: 600;
@@ -116,7 +155,7 @@
   width: 100%;
   background: #ffffff;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 16px 20px;
   font-size: 14px;
   color: #5a6c7d;
@@ -162,7 +201,7 @@
   background: #0f4c5c;
   color: #ffffff;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 12px 20px;
   font-size: 13px;
   font-weight: 600;
@@ -210,7 +249,7 @@
 .field-editor {
   background: #f8fafb;
   border: 2px solid #e8ecef;
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 20px;
   margin-bottom: 16px;
   transition: all 0.2s ease;
@@ -237,7 +276,7 @@
   background: #0f4c5c;
   color: white;
   padding: 6px 14px;
-  border-radius: 6px;
+  border-radius: 10px;
   font-size: 13px;
   font-weight: 600;
 }
@@ -255,7 +294,7 @@
   font-size: 16px;
   cursor: pointer;
   padding: 8px;
-  border-radius: 6px;
+  border-radius: 10px;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
@@ -291,12 +330,42 @@
   width: 100%;
   padding: 12px 16px;
   border: 2px solid #e8ecef;
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 14px;
   color: #2c3e50;
   background: white;
   transition: all 0.2s ease;
   outline: none;
+}
+
+/* Style all inputs and selects within form-group */
+.form-group input[type="text"],
+.form-group input[type="date"],
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e8ecef;
+  border-radius: 12px;
+  font-size: 14px;
+  color: #2c3e50;
+  background: white;
+  transition: all 0.2s ease;
+  outline: none;
+  font-family: inherit;
+}
+
+.form-group input[type="text"]:focus,
+.form-group input[type="date"]:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: #5a8a96;
+  box-shadow: 0 0 0 3px rgba(90, 138, 150, 0.1);
+}
+
+.form-group input[type="text"]::placeholder,
+.form-group textarea::placeholder {
+  color: #b8c5ce;
 }
 
 .field-input:focus {
@@ -315,7 +384,7 @@
   gap: 10px;
   padding: 12px;
   background: white;
-  border-radius: 8px;
+  border-radius: 12px;
   border: 1px solid #e8ecef;
 }
 
@@ -329,7 +398,7 @@
   flex: 1;
   padding: 10px 14px;
   border: 2px solid #e8ecef;
-  border-radius: 6px;
+  border-radius: 10px;
   font-size: 14px;
   color: #2c3e50;
   transition: all 0.2s ease;
@@ -348,7 +417,7 @@
   font-size: 14px;
   cursor: pointer;
   padding: 8px 10px;
-  border-radius: 6px;
+  border-radius: 10px;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
@@ -366,7 +435,7 @@
   color: white;
   border: none;
   padding: 10px 16px;
-  border-radius: 6px;
+  border-radius: 10px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -433,7 +502,7 @@
   align-items: center;
   background: #f5f7fa;
   padding: 12px 16px;
-  border-radius: 8px;
+  border-radius: 12px;
   margin-bottom: 8px;
 }
 
@@ -451,7 +520,7 @@
   font-size: 13px;
   cursor: pointer;
   padding: 4px 12px;
-  border-radius: 6px;
+  border-radius: 10px;
   transition: all 0.2s ease;
 }
 
@@ -491,7 +560,10 @@
 @media (max-width: 768px) {
   .modal-container {
     width: 95%;
-    max-height: 95vh;
+    max-height: calc(100vh - 20px);
+    /* Better for mobile browser bars */
+    margin: 10px;
+    /* Force margin */
   }
 
   .modal-content {

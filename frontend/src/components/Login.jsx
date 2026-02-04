@@ -1,34 +1,38 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "../styles/Login.css";
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
-import logo from "../assets/eFormX.png";
-import axios from "axios";
+import logo from "../assets/eFormX1.png";
 
-function Login({ goRegister, goForgot, setUser }) {
+import authService from "../services/authService";
+
+function Login({ setUser }) {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false); // disable button while logging in
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      setError("Please enter email and password.");
-      return;
-    }
-
+  const handleSubmit = async (e) => {
+    if (e) e.preventDefault();
     setLoading(true);
     setError("");
 
     try {
-      const res = await axios.post("http://127.0.0.1:8000/api/login", {
-        email,
-        password,
-      });
-
-      setUser(res.data); // send logged-in user info to App.jsx
+      const userData = await authService.login(email, password);
+      setUser(userData);
     } catch (err) {
-      setError(err.response?.data?.message || "Login failed");
+      console.error("Login component error:", err);
+      let message = "Invalid email or password";
+
+      if (!err.response) {
+        message = "Cannot connect to server. Please ensure the backend is running at http://127.0.0.1:8000";
+      } else if (err.response.data && err.response.data.message) {
+        message = err.response.data.message;
+      }
+
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -43,6 +47,8 @@ function Login({ goRegister, goForgot, setUser }) {
       <div className="login-card">
         <h2>Welcome</h2>
 
+        {error && <div className="error-message" style={{ color: "red", marginBottom: "10px", textAlign: "center" }}>{error}</div>}
+
         <div className="input-group">
           <FaEnvelope className="icon" />
           <input
@@ -50,6 +56,7 @@ function Login({ goRegister, goForgot, setUser }) {
             placeholder="name@gmail.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
           />
         </div>
 
@@ -60,6 +67,7 @@ function Login({ goRegister, goForgot, setUser }) {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
           />
           <span
             className="password-toggle"
@@ -69,19 +77,16 @@ function Login({ goRegister, goForgot, setUser }) {
           </span>
         </div>
 
-        {error && <p className="error-message">{error}</p>}
-
         <button
           className="login-btn"
-          onClick={handleLogin}
+          onClick={handleSubmit}
           disabled={loading}
         >
           {loading ? "Signing In..." : "Sign In"}
         </button>
 
         <div className="links">
-          <span onClick={goForgot}>Forgot Password</span>
-          {goRegister && <span onClick={goRegister}>Register</span>}
+          <span onClick={() => navigate('/forgot')} style={{ cursor: 'pointer' }}>Forgot Password</span>
         </div>
       </div>
     </div>

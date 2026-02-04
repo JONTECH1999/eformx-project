@@ -21,7 +21,7 @@ function CreateAccountModal({ isOpen, onClose, onCreate, onUpdate, account }) {
         setForm({
           name: account.name || "",
           email: account.email || "",
-          password: "", 
+          password: "",
           role: account.role || "Admin",
           status: account.status || "Active",
         });
@@ -46,13 +46,28 @@ function CreateAccountModal({ isOpen, onClose, onCreate, onUpdate, account }) {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // optional choice for the password
+    // Validate required fields
     if (!form.name || !form.email || (!account && !form.password)) {
       setIsError(true);
       setMessage("Please fill in all required fields.");
+      return;
+    }
+
+    // Stricter email format check: require domain + TLD
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    if (!emailRegex.test(form.email)) {
+      setIsError(true);
+      setMessage("Please enter a valid email (e.g., name@example.com).");
+      return;
+    }
+
+    // Enforce minimum password length on create (and on edit if provided)
+    if ((!account && form.password.length < 6) || (account && form.password && form.password.length < 6)) {
+      setIsError(true);
+      setMessage("The password must be at least 6 characters.");
       return;
     }
 
@@ -61,24 +76,29 @@ function CreateAccountModal({ isOpen, onClose, onCreate, onUpdate, account }) {
       email: form.email,
       password: form.password,
       role: form.role,
-      status: form.status,
+      status: account ? form.status : "Active", // force Active on create
     };
 
-    if (account) {
-      // Edit mode
-      onUpdate(accountData);
-      setMessage("Account successfully updated!");
-    } else {
-      // Create mode
-      onCreate(accountData);
-      setMessage("Account successfully created!");
+    try {
+      if (account) {
+        await onUpdate(accountData);
+        setMessage("Account successfully updated!");
+      } else {
+        await onCreate(accountData);
+        setMessage("Account successfully created!");
+      }
+      setIsError(false);
+      setTimeout(() => {
+        onClose();
+      }, 1200);
+    } catch (err) {
+      // Surface backend validation or generic errors
+      const apiMsg = err?.response?.data?.message
+        || (Array.isArray(err?.response?.data?.errors) ? err.response.data.errors.join(', ') : null)
+        || "An error occurred. Please try again.";
+      setIsError(true);
+      setMessage(apiMsg);
     }
-
-    setIsError(false);
-
-    setTimeout(() => {
-      onClose();
-    }, 1500);
   };
 
   return (
@@ -110,7 +130,9 @@ function CreateAccountModal({ isOpen, onClose, onCreate, onUpdate, account }) {
             placeholder="Email"
             value={form.email}
             onChange={handleChange}
-            disabled={!!account} 
+            pattern="[^\s@]+@[^\s@]+\.[^\s@]{2,}"
+            title="Enter a valid email like name@example.com"
+            disabled={!!account}
           />
 
           <input
@@ -126,10 +148,37 @@ function CreateAccountModal({ isOpen, onClose, onCreate, onUpdate, account }) {
             <option>Super Admin</option>
           </select>
 
-          <select name="status" value={form.status} onChange={handleChange}>
-            <option>Active</option>
-            <option>Inactive</option>
-          </select>
+          {/* ✅ SMART STATUS DROPDOWN ONLY WHEN EDITING */}
+          {account && (
+            <select
+              name="status"
+              value={form.status}
+              onChange={(e) => {
+                const value = e.target.value;
+
+                // Convert action into real status
+                if (value === "Deactivate") {
+                  setForm({ ...form, status: "Inactive" });
+                } else if (value === "Reactivate") {
+                  setForm({ ...form, status: "Active" });
+                } else {
+                  setForm({ ...form, status: value });
+                }
+              }}
+            >
+              {/* Show current status */}
+              <option value={form.status}>{form.status}</option>
+
+              {/* Show action based on current status */}
+              {form.status === "Active" && (
+                <option value="Deactivate">Deactivate</option>
+              )}
+
+              {form.status === "Inactive" && (
+                <option value="Reactivate">Reactivate</option>
+              )}
+            </select>
+          )}
 
           <button type="submit" className="create-btn">
             {account ? "Update Account" : "Create Account"}
