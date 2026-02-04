@@ -44,27 +44,51 @@ function SuperAdminDashboard({ onLogout }) {
 
   // ✅ Persistent Super Admin Profile
   const [superAdminProfile, setSuperAdminProfile] = useState(() => {
+    const currentUser = authService.getCurrentUser();
     const saved = localStorage.getItem("superAdminProfile");
-    return saved
-      ? JSON.parse(saved)
-      : {
+    const savedObj = saved ? JSON.parse(saved) : null;
+
+    if (currentUser) {
+      return {
+        name: currentUser.name,
+        email: currentUser.email,
+        photo: savedObj?.photo || "https://i.pravatar.cc/150?img=5",
+      };
+    }
+
+    return (
+      savedObj || {
         name: "Admin",
         email: "admin@example.com",
         photo: "https://i.pravatar.cc/150?img=5",
-      };
+      }
+    );
   });
 
-  const handleSaveProfile = () => {
-    localStorage.setItem(
-      "superAdminProfile",
-      JSON.stringify(superAdminProfile)
-    );
-    // Show inline success message inside the Edit Profile modal
-    setProfileMessage("Profile updated!");
-    // Auto-hide message after 2 seconds
-    setTimeout(() => {
-      setProfileMessage("");
-    }, 2000);
+  const handleSaveProfile = async () => {
+    try {
+      // Persist profile changes to backend account (Super Admin)
+      const updated = await authService.updateProfile({
+        name: superAdminProfile.name,
+        email: superAdminProfile.email,
+      });
+
+      // Keep local UI profile in sync
+      const nextProfile = {
+        ...superAdminProfile,
+        name: updated.name,
+        email: updated.email,
+      };
+      setSuperAdminProfile(nextProfile);
+      localStorage.setItem("superAdminProfile", JSON.stringify(nextProfile));
+
+      setProfileMessage("Profile updated!");
+    } catch (e) {
+      const msg = e?.response?.data?.message || "Failed to update profile.";
+      setProfileMessage(msg);
+    } finally {
+      setTimeout(() => setProfileMessage(""), 2000);
+    }
   };
 
   // Account Logic
@@ -131,6 +155,8 @@ function SuperAdminDashboard({ onLogout }) {
     if (onLogout) {
       onLogout();
       setIsProfileOpen(false);
+      // Clear any locally cached profile so next login reads backend user
+      localStorage.removeItem("superAdminProfile");
     }
   };
 
