@@ -58,6 +58,14 @@ class UserController extends Controller
 
         $user = User::create($validated);
 
+        // Prevent duplicate emails across super_admins and users was enforced earlier,
+        // but double-check: if a SuperAdmin exists with same email rollback and error.
+        if (SuperAdmin::where('email', $user->email)->exists()) {
+            // delete created user to avoid duplicates
+            $user->delete();
+            return response()->json(['message' => 'Email already registered as a Super Admin'], 422);
+        }
+
         // Send credentials email to admin/creator accounts
         $role = $validated['role'] ?? null;
         if ($role && in_array(strtolower($role), ['admin', 'creator'])) {
@@ -100,16 +108,32 @@ class UserController extends Controller
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
-        $user = User::findOrFail($id);
+        // If the ID does not exist in users table, it might belong to SuperAdmin.
+        // Handle cross-table role conversion when changing roles.
+        $user = User::find($id);
+        if (!$user) {
+            // If converting from Super Admin to Admin/User, the frontend may still call /users/{id}
+            // Try to fetch as SuperAdmin and convert if requested
+            $asAdmin = SuperAdmin::find($id);
+            if (!$asAdmin) {
+                // Preserve original error message semantics
+                return response()->json(['message' => "No query results for model [App\\Models\\User] $id"], 404);
+            }
+        }
 
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
             // RFC email + DNS domain check on update as well
-            'email' => ['sometimes', 'required', 'email:rfc,dns', Rule::unique('users')->ignore($user->id)],
+            'email' => ['sometimes', 'required', 'email:rfc,dns', Rule::unique('users')->ignore($user?->id)],
             'password' => 'sometimes|nullable|string|min:6',
             'role' => 'nullable|string|max:50',
             'status' => 'nullable|in:Active,Inactive',
         ]);
+
+        // Prevent updating email to one that belongs to a SuperAdmin
+        if (array_key_exists('email', $validated) && SuperAdmin::where('email', $validated['email'])->exists()) {
+            return response()->json(['message' => 'Email already registered as a Super Admin'], 422);
+        }
 
         // Hash password if provided
         if (isset($validated['password']) && !empty($validated['password'])) {
@@ -118,9 +142,91 @@ class UserController extends Controller
             unset($validated['password']); // Don't update password if not provided
         }
 
-        $user->update($validated);
+        // If this request targets an existing User record
+        if ($user) {
+            // Prevent updating email to one that belongs to a SuperAdmin
+            if (array_key_exists('email', $validated) && SuperAdmin::where('email', $validated['email'])->exists()) {
+                return response()->json(['message' => 'Email already registered as a Super Admin'], 422);
+            }
 
-        return response()->json($user);
+            // Hash password if provided
+            if (isset($validated['password']) && !empty($validated['password'])) {
+                $validated['password'] = Hash::make($validated['password']);
+            } else {
+                unset($validated['password']); // Don't update password if not provided
+            }
+
+            // If changing role to Super Admin, convert across tables
+            if (isset($validated['role']) && strcasecmp($validated['role'], 'Super Admin') === 0) {
+                // Block if a SuperAdmin with this email already exists
+                if (SuperAdmin::where('email', $user->email)->exists()) {
+                    return response()->json(['message' => 'Email already registered as a Super Admin'], 422);
+                }
+
+                // Create SuperAdmin with existing hashed password
+                $admin = SuperAdmin::create([
+                    'name' => $validated['name'] ?? $user->name,
+                    'email' => $validated['email'] ?? $user->email,
+                    'password' => $user->password,
+                ]);
+
+                // Delete the original user
+                $user->delete();
+
+                return response()->json([
+                    'id' => $admin->id,
+                    'name' => $admin->name,
+                    'email' => $admin->email,
+                    'role' => 'Super Admin',
+                    'status' => 'Active',
+                ]);
+            }
+
+            // Normal user update
+            $user->update($validated);
+            return response()->json($user);
+        }
+
+        // Otherwise, converting a SuperAdmin to regular User via /users/{id}
+        $admin = SuperAdmin::findOrFail($id);
+
+        // If email collides with existing user, use that record; otherwise create
+        $existingUser = User::where('email', $admin->email)->first();
+
+        if ($existingUser) {
+            // Update existing user with provided fields
+            $payload = [
+                'name' => $validated['name'] ?? $existingUser->name ?? $admin->name,
+                'email' => $validated['email'] ?? $existingUser->email ?? $admin->email,
+                'role' => $validated['role'] ?? ($existingUser->role ?: 'Admin'),
+                'status' => $validated['status'] ?? ($existingUser->status ?: 'Active'),
+            ];
+            if (isset($validated['password']) && !empty($validated['password'])) {
+                $payload['password'] = Hash::make($validated['password']);
+            } else {
+                $payload['password'] = $existingUser->password ?? $admin->password; // keep current/historical
+            }
+            $existingUser->update($payload);
+            // Delete SuperAdmin record after conversion
+            $admin->delete();
+            return response()->json($existingUser);
+        }
+
+        // Create a new user with fields (carry over hashed password)
+        $newUser = User::create([
+            'name' => $validated['name'] ?? $admin->name,
+            'email' => $validated['email'] ?? $admin->email,
+            'password' => isset($validated['password']) && !empty($validated['password'])
+                ? Hash::make($validated['password'])
+                : $admin->password,
+            'role' => $validated['role'] ?? 'Admin',
+            'status' => $validated['status'] ?? 'Active',
+        ]);
+
+        // Delete SuperAdmin record after conversion
+        $admin->delete();
+
+        return response()->json($newUser);
     }
 
     /**

@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\FormController;
 use App\Http\Controllers\FormResponseController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\SuperAdminController;
 
 // Public routes
 Route::post('/login', [AuthController::class, 'login']);
@@ -28,4 +29,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // User management (for SuperAdmin)
     Route::apiResource('users', UserController::class);
+    // SuperAdmin management (list/create/update)
+    Route::apiResource('super-admins', SuperAdminController::class)->only(['index','store','update']);
 });
