@@ -266,7 +266,7 @@ function SuperAdminDashboard({ onLogout }) {
               </tr>
             ) : (
               filteredAccounts.map((acc, index) => (
-                <tr key={acc.id || index}>
+                <tr key={`${acc.email || ''}-${acc.role || ''}-${acc.id ?? index}`}>
                   <td>{acc.name}</td>
                   <td>{acc.email}</td>
                   <td>{acc.role}</td>
